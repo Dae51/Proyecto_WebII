@@ -1,12 +1,16 @@
+
 import React from "react"
+import { Link } from "react-router-dom"
 
 export default function Navbar() {
   return (
     <nav className="bg-cyan-600 text-fuchsia-200 px-4 sm:px-6 md:px-8 py-3 md:py-4 flex justify-between items-center font-sans shadow">
 
-      <h1 className="text-lg sm:text-xl md:text-2xl font-extrabold tracking-wide">
-        LA CUPONERA
-      </h1>
+      <Link to="/">
+        <button className="text-lg sm:text-xl md:text-2xl font-extrabold tracking-wide focus:outline-none">
+          LA CUPONERA
+        </button>
+      </Link>
 
       <div className="flex items-center gap-3 sm:gap-4">
 

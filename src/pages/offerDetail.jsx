@@ -15,7 +15,7 @@ export default function OfferDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 sm:p-6 md:p-8 lg:p-10">
+    <div className="min-h-screen bg-blue-900 p-4 sm:p-6 md:p-8 lg:p-10">
 
       <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2">
