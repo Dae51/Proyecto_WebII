@@ -111,7 +111,7 @@ function StepRequestEmail({ onBack }) {
 
         {error && (
           <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
-            <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <p className="text-xs text-red-500">{error}</p>
@@ -354,7 +354,7 @@ function StepResetPassword() {
         {/* Error */}
         {error && (
           <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
-            <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <p className="text-xs text-red-500">{error}</p>
@@ -384,11 +384,7 @@ function StepResetPassword() {
   );
 }
 
-// ─────────────────────────────────────────────
-// COMPONENTE PRINCIPAL
-// Detecta automáticamente en qué paso está
-// el usuario según la URL
-// ─────────────────────────────────────────────
+
 export default function ForgotPassword({ onBack }) {
   // Supabase añade #access_token=... al redirigir desde el email.
   // Si existe en la URL, mostramos el paso de nueva contraseña.
