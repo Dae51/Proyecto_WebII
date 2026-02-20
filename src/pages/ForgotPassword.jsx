@@ -1,36 +1,46 @@
+import React from "react";
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { toast } from "react-toastify";
+import { checkSupabaseConnection, supabase } from "../resources/supabaseClient";
 
-// 🔧 Reemplaza con tus credenciales de Supabase
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
-
-// ─────────────────────────────────────────────
-// PASO 1 – Solicitar correo de recuperación
-// ─────────────────────────────────────────────
 function StepRequestEmail({ onBack }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    const validateConnection = async () => {
+      const { ok, error } = await checkSupabaseConnection();
+      if (!ok) {
+        toast.error("No se pudo conectar a Supabase.");
+        console.error("Supabase NO conectado:", error?.message);
+      } else {
+        console.log("Supabase conectado OK");
+      }
+    };
+
+    validateConnection();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: `${window.location.origin}/restore`,
       // 👆 Esta URL debe estar en tu lista de "Redirect URLs" en Supabase Dashboard
     });
 
     setLoading(false);
 
     if (error) {
+      toast.error(error.message);
       setError(error.message);
     } else {
+      toast.success("Enlace de recuperacion enviado. Revisa tu correo.");
       setSent(true);
     }
   };
@@ -79,9 +89,7 @@ function StepRequestEmail({ onBack }) {
         </svg>
       </div>
 
-      <h2 className="text-2xl font-black mb-1 text-center" style={{ color: "#1a2580" }}>
-        ¿Olvidaste tu contraseña?
-      </h2>
+
       <p className="text-sm text-gray-400 text-center mb-7">
         Ingresa tu correo y te enviaremos un enlace para restablecerla.
       </p>
@@ -175,7 +183,11 @@ function StepResetPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validationError = validate();
-    if (validationError) { setError(validationError); return; }
+    if (validationError) {
+      toast.info(validationError);
+      setError(validationError);
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -185,8 +197,10 @@ function StepResetPassword() {
     setLoading(false);
 
     if (error) {
+      toast.error(error.message);
       setError(error.message);
     } else {
+      toast.success("Contrasena actualizada correctamente.");
       setDone(true);
     }
   };
@@ -223,7 +237,6 @@ function StepResetPassword() {
           Tu contraseña fue restablecida correctamente. Ya puedes iniciar sesión.
         </p>
         <a
-          href="/login"
           className="inline-block w-full py-3 rounded-xl font-black text-sm text-gray-900 text-center transition-all hover:-translate-y-0.5"
           style={{ backgroundColor: "#f5a623", boxShadow: "0 4px 15px rgba(245,166,35,0.4)" }}
         >
@@ -380,21 +393,10 @@ export default function ForgotPassword({ onBack }) {
   // Supabase añade #access_token=... al redirigir desde el email.
   // Si existe en la URL, mostramos el paso de nueva contraseña.
   const isResetFlow = window.location.hash.includes("access_token") ||
-                      window.location.hash.includes("type=recovery");
+    window.location.hash.includes("type=recovery");
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#1a2580" }}>
-
-      {/* Navbar */}
-      <nav className="h-14 flex items-center justify-between px-8" style={{ backgroundColor: "#0097a7" }}>
-        <span className="text-white font-black text-lg tracking-wide">LA CUPONERA</span>
-        <div className="flex items-center gap-4">
-          <a href="/login" className="text-white text-sm font-medium hover:underline">Login</a>
-          <a href="/register" className="bg-black text-white text-sm font-semibold px-4 py-1.5 rounded-md hover:bg-gray-800 transition-colors">
-            Registrarse
-          </a>
-        </div>
-      </nav>
 
       {/* Body */}
       <div className="flex-1 flex items-center justify-center px-4 py-10">
