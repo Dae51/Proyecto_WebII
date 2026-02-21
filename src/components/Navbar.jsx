@@ -82,6 +82,12 @@ export default function Navbar() {
       </Link>
 
       <div className="flex items-center gap-3 sm:gap-4">
+        <Link to="/mis-cupones">
+          <button className="hover:text-rose-300 transition font-bold text-sm sm:text-base">
+            Mis Cupones
+          </button>
+        </Link>
+
         {!session ? (
           <>
             <button

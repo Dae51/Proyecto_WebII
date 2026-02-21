@@ -16,7 +16,7 @@ export default function OfferDetail() {
 
   return (
 
-    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-4 sm:p-6 md:p-8 lg:p-10">
+    <div className="min-h-screen bg-blue-900 p-4 sm:p-6 md:p-8 lg:p-10">
       <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2">
 
@@ -65,7 +65,7 @@ export default function OfferDetail() {
             </div>
 
             {/* BOTÓN */}
-            <button className="w-full bg-linear-to-r from-blue-500 to-purple-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:opacity-90 transition text-sm sm:text-base">
+            <button className="w-full bg-cyan-950 text-lime-50 py-2 sm:py-3 rounded-xl font-semibold hover:opacity-90 hover:scale-105 hover:bg-amber-400 hover:text-black transition text-sm sm:text-base active:scale-95">
               Comprar
             </button>
 
