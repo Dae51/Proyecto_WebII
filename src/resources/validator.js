@@ -28,12 +28,21 @@ export function validateRegisterInput({
   confirmPassword,
   name,
   lastName,
+  address,
+  phone,
+  dui,
 }) {
   if (!normalizeEmail(email) || !password) {
     return "Correo y contraseña son obligatorios.";
   }
-  if (isEmptyValue(name) || isEmptyValue(lastName)) {
-    return "Nombre y apellido son obligatorios.";
+  if (isEmptyValue(name) || isEmptyValue(lastName) || isEmptyValue(address)) {
+    return "Nombre, apellido y dirección son obligatorios.";
+  }
+  if (!/^\d{4}-\d{4}$/.test(String(phone ?? "").trim())) {
+    return "El teléfono debe tener formato ####-####.";
+  }
+  if (!/^\d{8}-\d$/.test(String(dui ?? "").trim())) {
+    return "El DUI debe tener formato ########-#.";
   }
   if (password.length < 8) {
     return "La contraseña debe tener al menos 8 caracteres.";

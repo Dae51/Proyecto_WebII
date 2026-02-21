@@ -28,11 +28,20 @@ const INITIAL_FORM = {
   password: "",
   name: "",
   lastName: "",
+  address: "",
+  phone: "",
+  dui: "",
   confirmPassword: "",
 };
 // Clase común para los campos de entrada
 const INPUT_CLASS =
   "w-full px-4 py-2.5 border-2 border-gray-100 rounded-xl text-sm bg-gray-50 focus:outline-none focus:border-teal-400 focus:bg-white transition-all";
+
+function formatWithPattern(rawValue, firstBlockLength, maxDigits) {
+  const onlyDigits = String(rawValue ?? "").replace(/\D/g, "").slice(0, maxDigits);
+  if (onlyDigits.length <= firstBlockLength) return onlyDigits;
+  return `${onlyDigits.slice(0, firstBlockLength)}-${onlyDigits.slice(firstBlockLength)}`;
+}
 
   // Componente principal de autenticación
 export default function AuthComponent() {
@@ -97,7 +106,15 @@ export default function AuthComponent() {
   // Función para manejar cambios en los campos del formulario
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    let nextValue = value;
+
+    if (name === "phone") {
+      nextValue = formatWithPattern(value, 4, 8);
+    } else if (name === "dui") {
+      nextValue = formatWithPattern(value, 8, 9);
+    }
+
+    setForm((prev) => ({ ...prev, [name]: nextValue }));
     setStatus((prev) => (prev.error || prev.success ? INITIAL_STATUS : prev));
   };
 
@@ -116,6 +133,9 @@ export default function AuthComponent() {
             confirmPassword: form.confirmPassword,
             name: form.name,
             lastName: form.lastName,
+            address: form.address,
+            phone: form.phone,
+            dui: form.dui,
           });
     if (validationError) {
       toast.info(validationError);
@@ -149,6 +169,9 @@ export default function AuthComponent() {
         password: form.password,
         name: form.name,
         lastName: form.lastName,
+        address: form.address,
+        phone: form.phone,
+        dui: form.dui,
         emailRedirectTo: `${window.location.origin}/auth`,
       });
 
@@ -266,6 +289,60 @@ export default function AuthComponent() {
                   />
                 </div>
               </div>
+            )}
+
+            {isSignup && (
+              <>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Dirección</label>
+                  <input
+                    type="text"
+                    name="address"
+                    placeholder="San Salvador, colonia..."
+                    value={form.address}
+                    onChange={handleChange}
+                    autoComplete="street-address"
+                    required
+                    className={INPUT_CLASS}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Teléfono</label>
+                    <input
+                      type="text"
+                      name="phone"
+                      placeholder="1234-5678"
+                      pattern="\d{4}-\d{4}"
+                      title="Formato requerido: 1234-5678"
+                      value={form.phone}
+                      onChange={handleChange}
+                      inputMode="numeric"
+                      maxLength={9}
+                      autoComplete="tel"
+                      required
+                      className={INPUT_CLASS}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">DUI</label>
+                    <input
+                      type="text"
+                      name="dui"
+                      placeholder="12345678-9"
+                      pattern="\d{8}-\d"
+                      title="Formato requerido: 12345678-9"
+                      value={form.dui}
+                      onChange={handleChange}
+                      inputMode="numeric"
+                      maxLength={10}
+                      required
+                      className={INPUT_CLASS}
+                    />
+                  </div>
+                </div>
+              </>
             )}
 
             {/* Email */}

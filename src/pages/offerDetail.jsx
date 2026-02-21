@@ -10,6 +10,14 @@ export default function OfferDetail() {
   const navigate = useNavigate()
   const offer = location.state?.offer
   const [quantity, setQuantity] = React.useState(1)
+  const [canBuy, setCanBuy] = React.useState(false)
+
+  React.useEffect(() => {
+    (async () => {
+      const { session } = await getCurrentSession()
+      setCanBuy(!!session?.user)
+    })()
+  }, [])
 
   if (!offer) {
     return (
@@ -36,6 +44,12 @@ export default function OfferDetail() {
   async function handleAddToCheckout() {
     const { session } = await getCurrentSession()
     const userId = session?.user?.id ?? null
+
+    if (!userId) {
+      toast.info("Inicia sesión para comprar cupones.")
+      navigate("/auth")
+      return
+    }
 
     addToCheckout({
       userId,
@@ -100,30 +114,32 @@ export default function OfferDetail() {
 
             </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <label htmlFor={`qty-detail-${offer.id}`} className="text-sm text-gray-700 font-medium">
-                  Cantidad
-                </label>
-                <input
-                  id={`qty-detail-${offer.id}`}
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={quantity}
-                  onChange={handleQuantityChange}
-                  className="w-24 rounded-lg border border-gray-300 px-2 py-1.5"
-                />
-              </div>
+            {canBuy && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <label htmlFor={`qty-detail-${offer.id}`} className="text-sm text-gray-700 font-medium">
+                    Cantidad
+                  </label>
+                  <input
+                    id={`qty-detail-${offer.id}`}
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={quantity}
+                    onChange={handleQuantityChange}
+                    className="w-24 rounded-lg border border-gray-300 px-2 py-1.5"
+                  />
+                </div>
 
-              <button
-                type="button"
-                onClick={handleAddToCheckout}
-                className="w-full bg-emerald-600 text-white py-2 sm:py-3 rounded-xl font-semibold hover:opacity-90 hover:scale-105 transition text-sm sm:text-base active:scale-95"
-              >
-                Comprar
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={handleAddToCheckout}
+                  className="w-full bg-emerald-600 text-white py-2 sm:py-3 rounded-xl font-semibold hover:opacity-90 hover:scale-105 transition text-sm sm:text-base active:scale-95"
+                >
+                  Comprar
+                </button>
+              </div>
+            )}
 
           </div>
 

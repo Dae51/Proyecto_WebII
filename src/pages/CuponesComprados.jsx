@@ -41,7 +41,7 @@ export default function CuponesComprados() {
     <div className="min-h-screen bg-blue-900 p-4 sm:p-6 md:p-8 lg:p-10">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl sm:text-4xl font-extrabold text-amber-300 mb-6">
-          Cupones Comprados
+          Mis cupones
         </h1>
 
         {items.length === 0 ? (

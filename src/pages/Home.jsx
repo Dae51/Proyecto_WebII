@@ -1,11 +1,7 @@
 import React from "react"
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
-import { toast } from "react-toastify"
 import OfferCard from "../components/offerCard"
 import { getCupones, filterCuponesByTipo, normalizeTipoEnum } from "../resources/CuponesService"
-import { getCurrentSession } from "../resources/AuthService"
-import { addToCheckout } from "../resources/PurchaseService"
 
 const CATEGORY_FILTERS = [
   { value: "todas", label: "Todas" },
@@ -19,7 +15,6 @@ const CATEGORY_FILTERS = [
 
 export default function Home() {
 
-  const navigate = useNavigate()
   const [offers, setOffers] = useState([])
   const [filteredOffers, setFilteredOffers] = useState([])
   const [selectedCategory, setSelectedCategory] = useState("todas")
@@ -58,33 +53,6 @@ export default function Home() {
 
     setSelectedCategory(categoryValue)
     setFilteredOffers(filterCuponesByTipo(offers, categoryValue))
-  }
-
-  async function handleSelectCoupon(offer) {
-    // Se usa un prompt nativo para mantener la estructura visual actual sin rediseñar la UI.
-    const rawQuantity = window.prompt("Ingresa la cantidad de cupones que deseas comprar:", "1")
-
-    if (rawQuantity === null) {
-      return
-    }
-
-    const quantity = Number(rawQuantity)
-    if (!Number.isInteger(quantity) || quantity < 1) {
-      toast.error("La cantidad debe ser un número entero mayor o igual a 1.")
-      return
-    }
-
-    const { session } = await getCurrentSession()
-    const userId = session?.user?.id ?? null
-
-    addToCheckout({
-      userId,
-      offer,
-      quantity,
-    })
-
-    toast.success("Cupón agregado al checkout.")
-    navigate("/checkout")
   }
 
   if (loading) {
@@ -138,11 +106,7 @@ export default function Home() {
       {/* Grid de ofertas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredOffers.map((offer) => (
-          <OfferCard
-            key={offer.id}
-            offer={offer}
-            onSelect={handleSelectCoupon}
-          />
+          <OfferCard key={offer.id} offer={offer} />
         ))}
       </div>
 

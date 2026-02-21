@@ -1,14 +1,31 @@
 import React from "react"
 import { Link } from "react-router-dom"
+import { getCurrentSession } from "../resources/AuthService"
 
 export default function OfferCard({ offer, onSelect }) {
 
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false)
   const regular = Number(offer.regular_price) || 0
   const offerPrice = Number(offer.offer_price) || 0
   const imageSrc = offer.image_url || "https://via.placeholder.com/800x500?text=Oferta"
   const discount = regular > 0
     ? Math.max(0, Math.round(((regular - offerPrice) / regular) * 100))
     : 0
+  const showSelectButton = isAuthenticated && typeof onSelect === "function"
+
+  React.useEffect(() => {
+    let mounted = true
+
+    ;(async () => {
+      const { session } = await getCurrentSession()
+      if (!mounted) return
+      setIsAuthenticated(!!session?.user)
+    })()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   return (
     <div className="
@@ -66,25 +83,27 @@ export default function OfferCard({ offer, onSelect }) {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2">
-          <button
-            type="button"
-            onClick={() => onSelect?.(offer)}
-            className="
-              w-full
-              bg-emerald-600
-              py-2
-              sm:py-2.5
-              rounded-xl
-              transition
-              duration-300
-              hover:opacity-90
-              hover:scale-105
-              text-white
-              text-sm sm:text-base
-            "
-          >
-            Seleccionar
-          </button>
+          {showSelectButton && (
+            <button
+              type="button"
+              onClick={() => onSelect?.(offer)}
+              className="
+                w-full
+                bg-emerald-600
+                py-2
+                sm:py-2.5
+                rounded-xl
+                transition
+                duration-300
+                hover:opacity-90
+                hover:scale-105
+                text-white
+                text-sm sm:text-base
+              "
+            >
+              Seleccionar
+            </button>
+          )}
 
           <Link to={`/offer/${offer.id}`} state={{ offer }} className="w-full">
             <button className="

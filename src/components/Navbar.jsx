@@ -86,11 +86,13 @@ export default function Navbar() {
       </p>
 
       <div className="flex items-center gap-3 sm:gap-4">
-        <Link to="/cupones-comprados">
-          <button className="text-white hover:text-white/90 transition font-bold text-sm sm:text-base">
-            Mis cupones
-          </button>
-        </Link>
+        {session && (
+          <Link to="/cupones-comprados">
+            <button className="text-white hover:text-white/90 transition font-bold text-sm sm:text-base">
+              Mis cupones
+            </button>
+          </Link>
+        )}
 
         {!session ? (
           <>

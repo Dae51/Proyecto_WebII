@@ -59,11 +59,17 @@ export async function registerWithPassword({
   password,
   name,
   lastName,
+  address,
+  phone,
+  dui,
   emailRedirectTo,
 }) {
   const normalizedEmail = normalizeEmail(email);
   const firstName = normalizeText(name);
   const lastNameValue = normalizeText(lastName);
+  const addressValue = normalizeText(address);
+  const phoneValue = normalizeText(phone);
+  const duiValue = normalizeText(dui);
 
   try {
     const { data, error } = await supabase.auth.signUp({
@@ -73,6 +79,9 @@ export async function registerWithPassword({
         data: {
           first_name: firstName,
           last_name: lastNameValue,
+          address: addressValue,
+          phone: phoneValue,
+          dui: duiValue,
         },
         emailRedirectTo,
       },
