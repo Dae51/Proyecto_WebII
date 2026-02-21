@@ -1,13 +1,9 @@
+// Se importa el cliente de Supabase
 import { supabase } from "./supabaseClient";
+// Se importan las funciones de normalización de texto y correo electrónico
+import { normalizeEmail, normalizeText } from "./validator";
 
-function normalizeEmail(email) {
-  return String(email ?? "").trim().toLowerCase();
-}
-
-function normalizeText(value) {
-  return String(value ?? "").trim();
-}
-
+// Función para construir un objeto de error de autenticación a partir de diferentes tipos de errores
 function buildAuthError(error, fallbackMessage) {
   if (error && typeof error === "object" && "message" in error) {
     return error;
@@ -20,35 +16,7 @@ function buildAuthError(error, fallbackMessage) {
   return { message: fallbackMessage };
 }
 
-export function validateLoginInput({ email, password }) {
-  if (!normalizeEmail(email) || !password) {
-    return "Correo y contraseña son obligatorios.";
-  }
-  return null;
-}
-
-export function validateRegisterInput({
-  email,
-  password,
-  confirmPassword,
-  name,
-  lastName,
-}) {
-  if (!normalizeEmail(email) || !password) {
-    return "Correo y contraseña son obligatorios.";
-  }
-  if (!normalizeText(name) || !normalizeText(lastName)) {
-    return "Nombre y apellido son obligatorios.";
-  }
-  if (password.length < 8) {
-    return "La contraseña debe tener al menos 8 caracteres.";
-  }
-  if (password !== confirmPassword) {
-    return "Las contraseñas no coinciden.";
-  }
-  return null;
-}
-
+// Función para obtener la sesión actual del usuario, manejando errores y devolviendo un objeto con la sesión o el error
 export async function getCurrentSession() {
   try {
     const { data, error } = await supabase.auth.getSession();
@@ -61,11 +29,13 @@ export async function getCurrentSession() {
   }
 }
 
+// Función para suscribirse a los cambios de autenticación, devolviendo la suscripción creada por Supabase
 export function subscribeToAuthChanges(callback) {
   const { data } = supabase.auth.onAuthStateChange(callback);
   return data?.subscription ?? null;
 }
 
+// Función para cerrar la sesión del usuario, manejando errores y devolviendo un objeto con el resultado de la operación
 export async function loginWithPassword({ email, password }) {
   const normalizedEmail = normalizeEmail(email);
   try {
@@ -83,6 +53,7 @@ export async function loginWithPassword({ email, password }) {
   }
 }
 
+// Función para registrar un nuevo usuario con correo electrónico y contraseña, 
 export async function registerWithPassword({
   email,
   password,
@@ -112,6 +83,35 @@ export async function registerWithPassword({
     return {
       data: null,
       error: buildAuthError(error, "No se pudo registrar la cuenta."),
+    };
+  }
+}
+
+// Función para solicitar la recuperación de contraseña, enviando un correo con un enlace de restablecimiento y manejando errores
+export async function requestPasswordRecovery({ email, redirectTo }) {
+  const normalizedEmail = normalizeEmail(email);
+  try {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo,
+    });
+    return { data, error };
+  } catch (error) {
+    return {
+      data: null,
+      error: buildAuthError(error, "No se pudo solicitar la recuperación de contraseña."),
+    };
+  }
+}
+
+// Función para actualizar la contraseña del usuario, manejando errores y devolviendo un objeto con el resultado de la operación
+export async function updatePassword(password) {
+  try {
+    const { data, error } = await supabase.auth.updateUser({ password });
+    return { data, error };
+  } catch (error) {
+    return {
+      data: null,
+      error: buildAuthError(error, "No se pudo actualizar la contraseña."),
     };
   }
 }

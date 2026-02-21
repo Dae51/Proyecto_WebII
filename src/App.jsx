@@ -6,6 +6,7 @@ import Home from "./pages/Home"
 import OfferDetail from "./pages/offerDetail"
 import AuthComponent from "./pages/AuthComponent"
 import ForgotPassword from "./pages/ForgotPassword"
+import RestorePassword from "./pages/RestorePassword"
 
 
 function App() {
@@ -16,7 +17,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/offer/:id" element={<OfferDetail />} />
         <Route path="/auth" element={<AuthComponent/>}/>
-        <Route path="/restore" element={<ForgotPassword/>}/>
+        <Route path="/forgot-password" element={<ForgotPassword/>}/>
+        <Route path="/restore-password" element={<RestorePassword/>}/>
       </Routes>
     </>
   )

@@ -1,21 +1,27 @@
-import React from "react";
-import { useEffect, useRef, useState } from "react";
+// Se importan React y sus hooks, así como funciones de navegación y notificaciones
+import React, { useEffect, useRef, useState } from "react";
+// Se importan funciones de autenticación y validación
 import { useNavigate } from "react-router-dom";
+// Se la funcion de notificaciones
 import { toast } from "react-toastify";
+// Se importan funciones de autenticación 
 import {
   getCurrentSession,
   loginWithPassword,
   registerWithPassword,
   subscribeToAuthChanges,
+} from "../resources/AuthService";
+// Se importan funciones de validación
+import {
   validateLoginInput,
   validateRegisterInput,
-} from "../resources/AuthService";
-
+} from "../resources/validator";
+// Se definen constantes para los modos de autenticación y el estado inicial del formulario
 const MODE = {
   LOGIN: "login",
   SIGNUP: "signup",
 };
-
+// Estado inicial para errores y éxito
 const INITIAL_STATUS = { error: "", success: "" };
 const INITIAL_FORM = {
   email: "",
@@ -24,27 +30,40 @@ const INITIAL_FORM = {
   lastName: "",
   confirmPassword: "",
 };
-
+// Clase común para los campos de entrada
 const INPUT_CLASS =
   "w-full px-4 py-2.5 border-2 border-gray-100 rounded-xl text-sm bg-gray-50 focus:outline-none focus:border-teal-400 focus:bg-white transition-all";
 
+  // Componente principal de autenticación
 export default function AuthComponent() {
+  // Se declara la constante modo
   const [mode, setMode] = useState(MODE.LOGIN);
+  // Se declara el estado para errores
   const [status, setStatus] = useState(INITIAL_STATUS);
+  // Se declara el estado para el formulario
   const [submitting, setSubmitting] = useState(false);
+  // Se declara el estado para mostrar/ocultar contraseña
+  const [showPassword, setShowPassword] = useState(false);
+  // Se declara el forms
   const [form, setForm] = useState(INITIAL_FORM);
+  // Se declara la función de navegación
   const navigate = useNavigate();
+  // Se declara una referencia para verificar si el componente está montado
   const isMountedRef = useRef(true);
+  // Se declara una constante para verificar si el modo actual es de registro
   const isSignup = mode === MODE.SIGNUP;
 
+  // Función para limpiar el estado de errores y éxito
   const clearStatus = () => setStatus(INITIAL_STATUS);
 
+  // Se utiliza useEffect para manejar la lógica de sesión y suscripción a cambios de autenticación
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
     };
   }, []);
 
+  // Se verifica la sesión actual al montar el componente y se suscribe a cambios de autenticación
   useEffect(() => {
     const checkSession = async () => {
       const { session, error } = await getCurrentSession();
@@ -75,12 +94,14 @@ export default function AuthComponent() {
     return () => subscription?.unsubscribe?.();
   }, [navigate]);
 
+  // Función para manejar cambios en los campos del formulario
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     setStatus((prev) => (prev.error || prev.success ? INITIAL_STATUS : prev));
   };
 
+// Función para manejar el envío del formulario, validando los datos y llamando a las funciones de autenticación correspondientes
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
@@ -160,13 +181,16 @@ export default function AuthComponent() {
     }
   };
 
+  // Función para cambiar entre modos de autenticación (login/signup)
   const switchMode = (nextMode) => {
     if (nextMode === mode) return;
     setMode(nextMode);
     clearStatus();
+    setShowPassword(false);
     setForm(INITIAL_FORM);
   };
 
+  // Renderizado del componente con formularios para login y registro, incluyendo validaciones, mensajes de error/éxito y navegación
   return (
     <>
       {/* Body */}
@@ -262,21 +286,30 @@ export default function AuthComponent() {
             {/* Password */}
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Contraseña</label>
-              <input
-                type="password"
-                name="password"
-                placeholder={isSignup ? "Mínimo 8 caracteres" : "••••••••"}
-                value={form.password}
-                onChange={handleChange}
-                autoComplete={isSignup ? "new-password" : "current-password"}
-                required
-                className={INPUT_CLASS}
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder={isSignup ? "Mínimo 8 caracteres" : "••••••••"}
+                  value={form.password}
+                  onChange={handleChange}
+                  autoComplete={isSignup ? "new-password" : "current-password"}
+                  required
+                  className={`${INPUT_CLASS} pr-20`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? "Ocultar" : "Mostrar"}
+                </button>
+              </div>
               {mode === MODE.LOGIN && (
                 <div className="text-right mt-1">
                   <button
                     type="button"
-                    onClick={() => navigate("/restore")}
+                    onClick={() => navigate("/forgot-password")}
                     className="text-xs font-semibold text-teal-500 hover:underline"
                   >
                     ¿Olvidaste tu contraseña?

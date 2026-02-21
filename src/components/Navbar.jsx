@@ -4,10 +4,19 @@ import { toast } from "react-toastify";
 import { supabase } from "../resources/supabaseClient";
 
 export default function Navbar() {
+  
   const [session, setSession] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
+  const user = session?.user ?? null;
+  const userMetadata = user?.user_metadata ?? {};
+  const userDisplayName =
+    [userMetadata.first_name, userMetadata.last_name].filter(Boolean).join(" ").trim() ||
+    userMetadata.full_name ||
+    userMetadata.name ||
+    user?.email ||
+    "Usuario";
 
   useEffect(() => {
     let mounted = true;
@@ -90,7 +99,13 @@ export default function Navbar() {
             </button>
           </>
         ) : (
-          <div className="relative" ref={menuRef}>
+          <div className="relative flex items-center gap-2" ref={menuRef}>
+            <span
+              className="hidden sm:block text-xs sm:text-sm font-semibold text-white max-w-36 truncate"
+              title={userDisplayName}
+            >
+              {userDisplayName}
+            </span>
             <button
               type="button"
               onClick={() => setMenuOpen((prev) => !prev)}
