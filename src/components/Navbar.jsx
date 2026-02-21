@@ -74,16 +74,20 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-cyan-600 text-fuchsia-200 px-4 sm:px-6 md:px-8 py-3 md:py-4 flex justify-between items-center font-sans shadow">
+    <nav className="relative bg-cyan-600 text-fuchsia-200 px-4 sm:px-6 md:px-8 py-3 md:py-4 flex justify-between items-center font-sans shadow">
       <Link to="/">
-        <button className="text-lg sm:text-xl md:text-2xl font-extrabold tracking-wide focus:outline-none">
+        <button className="text-lg sm:text-xl md:text-2xl font-extrabold tracking-wide focus:outline-none text-white">
           LA CUPONERA
         </button>
       </Link>
 
+      <p className="absolute left-1/2 -translate-x-1/2 hidden md:block text-2xl md:text-3xl font-extrabold tracking-wide text-amber-400 pointer-events-none">
+        Ahorra y gana!
+      </p>
+
       <div className="flex items-center gap-3 sm:gap-4">
         <Link to="/cupones-comprados">
-          <button className="hover:text-rose-300 transition font-bold text-sm sm:text-base">
+          <button className="text-white hover:text-white/90 transition font-bold text-sm sm:text-base">
             Mis cupones
           </button>
         </Link>
@@ -107,7 +111,7 @@ export default function Navbar() {
         ) : (
           <div className="relative flex items-center gap-2" ref={menuRef}>
             <span
-              className="hidden sm:block text-xs sm:text-sm font-semibold text-white max-w-36 truncate"
+              className="hidden sm:block text-sm sm:text-base font-semibold text-white max-w-36 truncate"
               title={userDisplayName}
             >
               {userDisplayName}

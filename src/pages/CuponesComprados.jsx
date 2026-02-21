@@ -1,17 +1,41 @@
 import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import { getCurrentSession } from "../resources/AuthService";
 import { getPurchasedCoupons } from "../resources/PurchaseService";
 
 export default function CuponesComprados() {
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       const { session } = await getCurrentSession();
       const userId = session?.user?.id ?? null;
-      setItems(getPurchasedCoupons(userId));
+      const { items: purchasedItems, error } = await getPurchasedCoupons(userId);
+
+      if (error && error.status !== 401) {
+        toast.error(error.message || "No se pudo cargar el historial de compras.");
+      }
+
+      setItems(purchasedItems ?? []);
+      setLoading(false);
     })();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-blue-900 p-4 sm:p-6 md:p-8 lg:p-10">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-amber-300 mb-6">
+            Cupones Comprados
+          </h1>
+          <div className="bg-white rounded-2xl p-6 text-center text-gray-700">
+            Cargando compras...
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-blue-900 p-4 sm:p-6 md:p-8 lg:p-10">
