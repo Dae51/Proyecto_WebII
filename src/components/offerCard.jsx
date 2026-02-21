@@ -1,7 +1,7 @@
 import React from "react"
 import { Link } from "react-router-dom"
 
-export default function OfferCard({ offer }) {
+export default function OfferCard({ offer, onSelect }) {
 
   const regular = Number(offer.regular_price) || 0
   const offerPrice = Number(offer.offer_price) || 0
@@ -65,25 +65,47 @@ export default function OfferCard({ offer }) {
           </span>
         </div>
 
-        <Link to={`/offer/${offer.id}`} state={{ offer }}>
-          <button className="
-            w-full
-            bg-cyan-950
-            py-2
-            sm:py-2.5
-            rounded-xl
-            transition
-            duration-300
-            hover:opacity-90
-            hover:scale-105
-            text-lime-50
-            text-sm sm:text-base
-            hover:bg-amber-400
-            hover:text-black
-          ">
-            Ver Oferta
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            type="button"
+            onClick={() => onSelect?.(offer)}
+            className="
+              w-full
+              bg-emerald-600
+              py-2
+              sm:py-2.5
+              rounded-xl
+              transition
+              duration-300
+              hover:opacity-90
+              hover:scale-105
+              text-white
+              text-sm sm:text-base
+            "
+          >
+            Seleccionar
           </button>
-        </Link>
+
+          <Link to={`/offer/${offer.id}`} state={{ offer }} className="w-full">
+            <button className="
+              w-full
+              bg-cyan-950
+              py-2
+              sm:py-2.5
+              rounded-xl
+              transition
+              duration-300
+              hover:opacity-90
+              hover:scale-105
+              text-lime-50
+              text-sm sm:text-base
+              hover:bg-amber-400
+              hover:text-black
+            ">
+              Ver Oferta
+            </button>
+          </Link>
+        </div>
 
       </div>
 

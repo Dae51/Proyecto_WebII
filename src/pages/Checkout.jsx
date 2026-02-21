@@ -13,6 +13,7 @@ export default function Checkout() {
   const navigate = useNavigate();
   const [userId, setUserId] = useState(null);
   const [items, setItems] = useState([]);
+  const [isFinalizing, setIsFinalizing] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -28,10 +29,15 @@ export default function Checkout() {
   }, [items]);
 
   function handleQtyChange(itemId, nextQuantity) {
+    const next = Number(nextQuantity);
+    if (!Number.isInteger(next) || next < 1) {
+      return;
+    }
+
     const updated = updateCheckoutQuantity({
       userId,
       itemId,
-      quantity: Math.max(1, Number(nextQuantity) || 1),
+      quantity: next,
     });
     setItems(updated);
   }
@@ -41,13 +47,43 @@ export default function Checkout() {
     setItems(updated);
   }
 
-  function handleFinalize() {
+  async function handleFinalize() {
     if (items.length === 0) {
       toast.info("No hay elementos en el checkout.");
       return;
     }
 
-    finalizeCheckout(userId);
+    if (!userId) {
+      toast.error("Debes iniciar sesión para finalizar tu compra.");
+      navigate("/auth");
+      return;
+    }
+
+    const hasInvalidQuantity = items.some((item) => {
+      const quantity = Number(item.quantity);
+      return !Number.isInteger(quantity) || quantity < 1;
+    });
+
+    if (hasInvalidQuantity) {
+      toast.error("Corrige las cantidades inválidas antes de finalizar.");
+      return;
+    }
+
+    setIsFinalizing(true);
+    const { error } = await finalizeCheckout(userId);
+    setIsFinalizing(false);
+
+    if (error) {
+      if (error.status === 401) {
+        toast.error("Tu sesión no es válida para completar la compra.");
+        navigate("/auth");
+        return;
+      }
+
+      toast.error(error.message || "No se pudo finalizar la compra.");
+      return;
+    }
+
     toast.success("Compra finalizada correctamente.");
     navigate("/cupones-comprados");
   }
@@ -87,6 +123,7 @@ export default function Checkout() {
                     <input
                       type="number"
                       min="1"
+                      step="1"
                       value={item.quantity}
                       onChange={(e) => handleQtyChange(item.id, e.target.value)}
                       className="w-20 rounded-lg border border-gray-300 px-2 py-1"
@@ -113,9 +150,10 @@ export default function Checkout() {
               <button
                 type="button"
                 onClick={handleFinalize}
+                disabled={isFinalizing}
                 className="px-5 py-2 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition"
               >
-                Finalizar Compra
+                {isFinalizing ? "Procesando..." : "Finalizar Compra"}
               </button>
             </div>
           </>

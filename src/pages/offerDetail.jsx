@@ -24,7 +24,12 @@ export default function OfferDetail() {
   const imageSrc = offer.image_url || "https://via.placeholder.com/900x600?text=Oferta"
 
   function handleQuantityChange(event) {
-    const next = Math.max(1, Number(event.target.value) || 1)
+    const next = Number(event.target.value)
+    if (!Number.isInteger(next) || next < 1) {
+      setQuantity(1)
+      return
+    }
+
     setQuantity(next)
   }
 
@@ -104,6 +109,7 @@ export default function OfferDetail() {
                   id={`qty-detail-${offer.id}`}
                   type="number"
                   min="1"
+                  step="1"
                   value={quantity}
                   onChange={handleQuantityChange}
                   className="w-24 rounded-lg border border-gray-300 px-2 py-1.5"
