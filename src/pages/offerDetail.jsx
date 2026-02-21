@@ -1,10 +1,15 @@
 import React from "react"
-import { useLocation } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
+import { toast } from "react-toastify"
+import { getCurrentSession } from "../resources/AuthService"
+import { addToCheckout } from "../resources/PurchaseService"
 
 export default function OfferDetail() {
 
   const location = useLocation()
+  const navigate = useNavigate()
   const offer = location.state?.offer
+  const [quantity, setQuantity] = React.useState(1)
 
   if (!offer) {
     return (
@@ -12,6 +17,29 @@ export default function OfferDetail() {
         Oferta no encontrada.
       </div>
     )
+  }
+
+  const regular = Number(offer.regular_price) || 0
+  const offerPrice = Number(offer.offer_price) || 0
+  const imageSrc = offer.image_url || "https://via.placeholder.com/900x600?text=Oferta"
+
+  function handleQuantityChange(event) {
+    const next = Math.max(1, Number(event.target.value) || 1)
+    setQuantity(next)
+  }
+
+  async function handleAddToCheckout() {
+    const { session } = await getCurrentSession()
+    const userId = session?.user?.id ?? null
+
+    addToCheckout({
+      userId,
+      offer,
+      quantity,
+    })
+
+    toast.success("Oferta agregada al checkout.")
+    navigate("/checkout")
   }
 
   return (
@@ -23,8 +51,11 @@ export default function OfferDetail() {
           {/* IMAGEN */}
           <div className="relative">
             <img
-              src={offer.image_url}
+              src={imageSrc}
               alt={offer.title}
+              onError={(e) => {
+                e.currentTarget.src = "https://via.placeholder.com/900x600?text=Oferta"
+              }}
               className="w-full h-64 sm:h-80 lg:h-full object-cover"
             />
           </div>
@@ -49,7 +80,7 @@ export default function OfferDetail() {
                 </p>
 
                 <p className="line-through text-gray-400 text-base sm:text-lg">
-                  ${offer.regular_price}
+                  ${regular}
                 </p>
 
                 <p className="text-sm text-gray-500 mt-4 mb-2">
@@ -57,17 +88,36 @@ export default function OfferDetail() {
                 </p>
 
                 <p className="text-2xl sm:text-3xl font-bold text-green-600">
-                  ${offer.offer_price}
+                  ${offerPrice}
                 </p>
 
               </div>
 
             </div>
 
-            {/* BOTÓN */}
-            <button className="w-full bg-cyan-950 text-lime-50 py-2 sm:py-3 rounded-xl font-semibold hover:opacity-90 hover:scale-105 hover:bg-amber-400 hover:text-black transition text-sm sm:text-base active:scale-95">
-              Comprar
-            </button>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <label htmlFor={`qty-detail-${offer.id}`} className="text-sm text-gray-700 font-medium">
+                  Cantidad
+                </label>
+                <input
+                  id={`qty-detail-${offer.id}`}
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={handleQuantityChange}
+                  className="w-24 rounded-lg border border-gray-300 px-2 py-1.5"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAddToCheckout}
+                className="w-full bg-emerald-600 text-white py-2 sm:py-3 rounded-xl font-semibold hover:opacity-90 hover:scale-105 transition text-sm sm:text-base active:scale-95"
+              >
+                Comprar
+              </button>
+            </div>
 
           </div>
 

@@ -3,9 +3,12 @@ import { Link } from "react-router-dom"
 
 export default function OfferCard({ offer }) {
 
-  const discount = Math.round(
-    ((offer.regular_price - offer.offer_price) / offer.regular_price) * 100
-  )
+  const regular = Number(offer.regular_price) || 0
+  const offerPrice = Number(offer.offer_price) || 0
+  const imageSrc = offer.image_url || "https://via.placeholder.com/800x500?text=Oferta"
+  const discount = regular > 0
+    ? Math.max(0, Math.round(((regular - offerPrice) / regular) * 100))
+    : 0
 
   return (
     <div className="
@@ -30,8 +33,11 @@ export default function OfferCard({ offer }) {
         </div>
 
         <img
-          src={offer.image_url}
+          src={imageSrc}
           alt={offer.title}
+          onError={(e) => {
+            e.currentTarget.src = "https://via.placeholder.com/800x500?text=Oferta"
+          }}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition duration-500"></div>
@@ -51,11 +57,11 @@ export default function OfferCard({ offer }) {
 
         <div className="flex items-center gap-3 mb-4">
           <span className="line-through text-gray-400 text-sm sm:text-base">
-            ${offer.regular_price}
+            ${regular}
           </span>
 
           <span className="text-green-600 text-xl sm:text-2xl font-bold">
-            ${offer.offer_price}
+            ${offerPrice}
           </span>
         </div>
 

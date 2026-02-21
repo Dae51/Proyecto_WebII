@@ -7,7 +7,8 @@ import OfferDetail from "./pages/offerDetail"
 import AuthComponent from "./pages/AuthComponent"
 import ForgotPassword from "./pages/ForgotPassword"
 import RestorePassword from "./pages/RestorePassword"
-import MisCupones from "./pages/MisCupones"
+import Checkout from "./pages/Checkout"
+import CuponesComprados from "./pages/CuponesComprados"
 
 
 function App() {
@@ -17,10 +18,11 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/offer/:id" element={<OfferDetail />} />
-        <Route path="/mis-cupones" element={<MisCupones/>} />
         <Route path="/auth" element={<AuthComponent/>}/>
         <Route path="/forgot-password" element={<ForgotPassword/>}/>
         <Route path="/restore-password" element={<RestorePassword/>}/>
+        <Route path="/checkout" element={<Checkout/>}/>
+        <Route path="/cupones-comprados" element={<CuponesComprados/>}/>
       </Routes>
     </>
   )

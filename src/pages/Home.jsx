@@ -1,6 +1,17 @@
 import React from "react"
 import { useState, useEffect } from "react"
 import OfferCard from "../components/offerCard"
+import { getCupones, filterCuponesByTipo, normalizeTipoEnum } from "../resources/CuponesService"
+
+const CATEGORY_FILTERS = [
+  { value: "todas", label: "Todas" },
+  { value: "restaurante", label: "Restaurante" },
+  { value: "belleza", label: "Belleza" },
+  { value: "talleres", label: "Talleres" },
+  { value: "tecnologia", label: "Tecnologia" },
+  { value: "entretenimiento", label: "Entretenimiento" },
+  { value: "otros", label: "Otros" },
+]
 
 export default function Home() {
 
@@ -14,83 +25,31 @@ export default function Home() {
     fetchOffers()
   }, [])
 
-  function fetchOffers() {
-    setTimeout(() => {
-      try {
-        const dummyData = [
-          {
-            id: 1,
-            title: "2x1 en Camperitos",
-            description: "Válido todos los días",
-            regular_price: 18.9,
-            offer_price: 9.45,
-            rubro: "restaurantes",
-            status: "approved",
-            start_date: "2026-02-01",
-            end_date: "2026-02-28",
-            image_url: "https://inturfiles.s3.us-east-2.amazonaws.com/folder/products/500X500/camperitos_07f813d_fd8d538.jpg"
-          },
-          {
-            id: 2,
-            title: "Spa 50% descuento",
-            description: "Incluye masaje relajante",
-            regular_price: 40,
-            offer_price: 10.50,
-            rubro: "belleza",
-            status: "approved",
-            start_date: "2026-02-10",
-            end_date: "2026-05-20",
-            image_url: "https://bambucitycenter.com/wp-content/uploads/2024/04/Vidals.png"
-          },
-          {
-            id: 3,
-            title: "Cambio de aceite",
-            description: "Incluye revisión general",
-            regular_price: 50,
-            offer_price: 30,
-            rubro: "talleres",
-            status: "approved",
-            start_date: "2026-01-01",
-            end_date: "2026-03-31",
-            image_url: "https://www.impressarepuestos.com/nicaragua/files/2019/01/image1-1.jpeg"
-          }
-        ]
+  async function fetchOffers() {
+    setLoading(true)
+    setError(null)
 
-        const today = new Date()
+    const { cupones, error: fetchError } = await getCupones()
 
-        const activeOffers = dummyData.filter(offer => {
-          const start = new Date(offer.start_date)
-          const end = new Date(offer.end_date)
+    if (fetchError) {
+      setError("Error al cargar ofertas")
+      setOffers([])
+      setFilteredOffers([])
+      setLoading(false)
+      return
+    }
 
-          return (
-            offer.status === "approved" &&
-            today >= start &&
-            today <= end
-          )
-        })
-
-        setOffers(activeOffers)
-        setFilteredOffers(activeOffers)
-        setLoading(false)
-
-      } catch (err) {
-        setError("Error al cargar ofertas")
-        setLoading(false)
-      }
-    }, 1000)
+    setOffers(cupones)
+    setFilteredOffers(cupones)
+    setLoading(false)
   }
 
   function handleFilter(category) {
-    setSelectedCategory(category)
+    const normalizedCategory = normalizeTipoEnum(category)
+    const categoryValue = normalizedCategory === "taller" ? "talleres" : normalizedCategory
 
-    if (category === "todas") {
-      setFilteredOffers(offers)
-    } else {
-      const filtered = offers.filter(
-        offer => offer.rubro === category
-      )
-      setFilteredOffers(filtered)
-    }
+    setSelectedCategory(categoryValue)
+    setFilteredOffers(filterCuponesByTipo(offers, categoryValue))
   }
 
   if (loading) {
@@ -126,17 +85,17 @@ export default function Home() {
 
       {/* Filtro */}
       <div className="flex gap-3 md:gap-4 mb-6 flex-wrap justify-center md:justify-start">
-        {["todas", "restaurantes", "belleza", "talleres"].map(cat => (
+        {CATEGORY_FILTERS.map(cat => (
           <button
-            key={cat}
-            onClick={() => handleFilter(cat)}
+            key={cat.value}
+            onClick={() => handleFilter(cat.value)}
             className={`px-4 py-2 rounded-lg transition capitalize text-sm md:text-base
-              ${selectedCategory === cat
+              ${selectedCategory === cat.value
                 ? "bg-amber-200 text-black"
                 : "bg-white shadow"
               }`}
           >
-            {cat}
+            {cat.label}
           </button>
         ))}
       </div>
