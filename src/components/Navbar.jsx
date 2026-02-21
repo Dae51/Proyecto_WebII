@@ -82,7 +82,7 @@ export default function Navbar() {
       </Link>
 
       <p className="absolute left-1/2 -translate-x-1/2 hidden md:block text-2xl md:text-3xl font-extrabold tracking-wide text-amber-400 pointer-events-none">
-        Ahorra y gana!
+        ¡Ahorra y gana!
       </p>
 
       <div className="flex items-center gap-3 sm:gap-4">
