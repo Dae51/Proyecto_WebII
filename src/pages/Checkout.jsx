@@ -89,7 +89,7 @@ export default function Checkout() {
   }
 
   return (
-    <div className="min-h-screen bg-blue-900 p-4 sm:p-6 md:p-8 lg:p-10">
+    <div className="min-h-screen bg-[#020b24] p-4 sm:p-6 md:p-8 lg:p-10">
       <div className="max-w-5xl mx-auto">
         <h1 className="text-3xl sm:text-4xl font-extrabold text-amber-300 mb-6">
           Finaliza tu compra

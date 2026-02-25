@@ -156,7 +156,7 @@ function StepRequestEmail({ onBack }) {
 // Componente principal de la página de recuperación de contraseña, que incluye el formulario para solicitar el correo de recuperación y navegación para volver al login
 export default function ForgotPassword({ onBack }) {
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#1a2580" }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--app-bg-color)" }}>
       {/* Body */}
       <div className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
