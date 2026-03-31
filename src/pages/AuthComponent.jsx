@@ -13,6 +13,10 @@ import {
 } from "../resources/AuthService";
 // Se importan funciones de validación
 import {
+  USER_ROLES,
+  getDefaultRouteByRole,
+} from "../resources/roles";
+import {
   validateLoginInput,
   validateRegisterInput,
 } from "../resources/validator";
@@ -86,7 +90,7 @@ export default function AuthComponent() {
       }
 
       if (session) {
-        navigate("/", { replace: true });
+        navigate(getDefaultRouteByRole(session.app_role), { replace: true });
       }
     };
 
@@ -96,7 +100,7 @@ export default function AuthComponent() {
       if (!isMountedRef.current) return;
 
       if (event === "SIGNED_IN" && session) {
-        navigate("/", { replace: true });
+        navigate(getDefaultRouteByRole(session.app_role), { replace: true });
       }
     });
 
@@ -147,7 +151,7 @@ export default function AuthComponent() {
 
     try {
       if (mode === MODE.LOGIN) {
-        const { error } = await loginWithPassword({
+        const { data, error } = await loginWithPassword({
           email: form.email,
           password: form.password,
         });
@@ -160,7 +164,7 @@ export default function AuthComponent() {
 
         toast.success("Inicio de sesion exitoso.");
         setStatus({ error: "", success: "Inicio de sesión exitoso." });
-        navigate("/", { replace: true });
+        navigate(getDefaultRouteByRole(data?.session?.app_role), { replace: true });
         return;
       }
 
@@ -172,6 +176,7 @@ export default function AuthComponent() {
         address: form.address,
         phone: form.phone,
         dui: form.dui,
+        role: USER_ROLES.CLIENT,
         emailRedirectTo: `${window.location.origin}/auth`,
       });
 
@@ -184,7 +189,7 @@ export default function AuthComponent() {
       if (data?.session) {
         toast.success("Cuenta creada e inicio de sesion exitoso.");
         setStatus({ error: "", success: "Cuenta creada e inicio de sesión exitoso." });
-        navigate("/", { replace: true });
+        navigate(getDefaultRouteByRole(data?.session?.app_role), { replace: true });
         return;
       }
 
