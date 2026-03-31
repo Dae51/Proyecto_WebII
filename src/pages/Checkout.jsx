@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { getCurrentSession } from "../resources/AuthService";
+import { createStripeCheckoutSession } from "../resources/PaymentService";
 import {
-  finalizeCheckout,
   getCheckoutItems,
   removeCheckoutItem,
   updateCheckoutQuantity,
@@ -11,9 +11,10 @@ import {
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [userId, setUserId] = useState(null);
   const [items, setItems] = useState([]);
-  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [isStartingPayment, setIsStartingPayment] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -23,6 +24,15 @@ export default function Checkout() {
       setItems(getCheckoutItems(nextUserId));
     })();
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get("pago") !== "cancelado") {
+      return;
+    }
+
+    toast.info("El pago fue cancelado.");
+    navigate("/checkout", { replace: true });
+  }, [navigate, searchParams]);
 
   const total = useMemo(() => {
     return items.reduce((acc, item) => acc + (Number(item.subtotal) || 0), 0);
@@ -47,16 +57,16 @@ export default function Checkout() {
     setItems(updated);
   }
 
-  async function handleFinalize() {
+  function validateCheckoutBeforePayment() {
     if (items.length === 0) {
       toast.info("No hay elementos en el checkout.");
-      return;
+      return false;
     }
 
     if (!userId) {
       toast.error("Debes iniciar sesión para finalizar tu compra.");
       navigate("/auth");
-      return;
+      return false;
     }
 
     const hasInvalidQuantity = items.some((item) => {
@@ -66,30 +76,38 @@ export default function Checkout() {
 
     if (hasInvalidQuantity) {
       toast.error("Corrige las cantidades inválidas antes de finalizar.");
+      return false;
+    }
+
+    return true;
+  }
+
+  function handleFinalize() {
+    if (!validateCheckoutBeforePayment()) {
       return;
     }
 
-    setIsFinalizing(true);
-    const { error } = await finalizeCheckout(userId);
-    setIsFinalizing(false);
+    void startStripeCheckout();
+  }
+
+  async function startStripeCheckout() {
+    setIsStartingPayment(true);
+    const { checkoutUrl, error } = await createStripeCheckoutSession({
+      userId,
+      items,
+    });
+    setIsStartingPayment(false);
 
     if (error) {
-      if (error.status === 401) {
-        toast.error("Tu sesión no es válida para completar la compra.");
-        navigate("/auth");
-        return;
-      }
-
-      toast.error(error.message || "No se pudo finalizar la compra.");
+      toast.error(error.message || "No se pudo iniciar el proceso de pago.");
       return;
     }
 
-    toast.success("Compra finalizada correctamente.");
-    navigate("/cupones-comprados");
+    window.location.assign(checkoutUrl);
   }
 
   return (
-    <div className="min-h-screen bg-blue-900 p-4 sm:p-6 md:p-8 lg:p-10">
+    <div className="min-h-screen bg-[#020b24] p-4 sm:p-6 md:p-8 lg:p-10">
       <div className="max-w-5xl mx-auto">
         <h1 className="text-3xl sm:text-4xl font-extrabold text-amber-300 mb-6">
           Finaliza tu compra
@@ -150,10 +168,10 @@ export default function Checkout() {
               <button
                 type="button"
                 onClick={handleFinalize}
-                disabled={isFinalizing}
+                disabled={isStartingPayment}
                 className="px-5 py-2 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition"
               >
-                {isFinalizing ? "Procesando..." : "Finalizar Compra"}
+                {isStartingPayment ? "Redirigiendo a pago..." : "Finalizar Compra"}
               </button>
             </div>
           </>

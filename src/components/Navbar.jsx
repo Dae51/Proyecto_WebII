@@ -74,21 +74,21 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="relative bg-cyan-600 text-fuchsia-200 px-4 sm:px-6 md:px-8 py-3 md:py-4 flex justify-between items-center font-sans shadow">
+    <nav className="relative z-40 flex items-center justify-between border-b border-white/10 bg-black px-4 py-3 text-slate-100 shadow-[0_12px_30px_rgba(0,0,0,0.55)] sm:px-6 md:px-8 md:py-4">
       <Link to="/">
-        <button className="text-lg sm:text-xl md:text-2xl font-extrabold tracking-wide focus:outline-none text-white">
+        <button className="text-lg font-extrabold tracking-[0.16em] text-white transition hover:text-cyan-100 focus:outline-none sm:text-xl md:text-2xl">
           LA CUPONERA
         </button>
       </Link>
 
-      <p className="absolute left-1/2 -translate-x-1/2 hidden md:block text-2xl md:text-3xl font-extrabold tracking-wide text-amber-400 pointer-events-none">
+      <p className="pointer-events-none absolute left-1/2 hidden -translate-x-1/2 bg-gradient-to-r from-cyan-200 via-slate-100 to-amber-300 bg-clip-text text-xl font-extrabold tracking-wide text-transparent lg:block xl:text-2xl 2xl:text-3xl">
         ¡Ahorra y gana!
       </p>
 
       <div className="flex items-center gap-3 sm:gap-4">
         {session && (
           <Link to="/cupones-comprados">
-            <button className="text-white hover:text-white/90 transition font-bold text-sm sm:text-base">
+            <button className="rounded-lg border border-cyan-100/10 bg-white/5 px-3 py-1.5 text-sm font-bold text-slate-100 transition hover:border-cyan-200/25 hover:bg-cyan-200/10 hover:text-cyan-100 sm:text-base">
               Mis cupones
             </button>
           </Link>
@@ -97,14 +97,14 @@ export default function Navbar() {
         {!session ? (
           <>
             <button
-              className="hover:text-rose-300 transition font-bold text-sm sm:text-base"
+              className="rounded-lg border border-cyan-100/10 bg-white/5 px-3 py-1.5 text-sm font-bold text-slate-100 transition hover:border-cyan-200/25 hover:bg-cyan-200/10 hover:text-cyan-100 sm:text-base"
               onClick={() => navigate("/auth")}
             >
               Login
             </button>
 
             <button
-              className="bg-black px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-rose-300 hover:text-black transition font-bold text-sm sm:text-base"
+              className="rounded-lg border border-amber-200/40 bg-gradient-to-r from-amber-300 to-amber-400 px-3 py-1.5 text-sm font-bold text-slate-950 shadow-[0_6px_18px_rgba(251,191,36,0.25)] transition hover:brightness-105 sm:px-4 sm:py-2 sm:text-base"
               onClick={() => navigate("/auth")}
             >
               Registrarse
@@ -113,7 +113,7 @@ export default function Navbar() {
         ) : (
           <div className="relative flex items-center gap-2" ref={menuRef}>
             <span
-              className="hidden sm:block text-sm sm:text-base font-semibold text-white max-w-36 truncate"
+              className="hidden max-w-36 truncate text-sm font-semibold text-slate-200 sm:block sm:text-base"
               title={userDisplayName}
             >
               {userDisplayName}
@@ -121,7 +121,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setMenuOpen((prev) => !prev)}
-              className="h-10 w-10 rounded-full bg-slate-900 text-white flex items-center justify-center border-2 border-white/60 hover:scale-105 transition"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-100/20 bg-[#08173d] text-cyan-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:scale-105 hover:border-cyan-100/35 hover:bg-[#0b2256]"
               aria-label="Abrir menu de usuario"
             >
               <svg
@@ -140,18 +140,18 @@ export default function Navbar() {
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-44 rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden z-50">
+              <div className="absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-xl border border-cyan-100/10 bg-[#07142f]/95 shadow-[0_18px_36px_rgba(0,0,0,0.45)] backdrop-blur-md">
                 <button
                   type="button"
                   onClick={handleGoToSettings}
-                  className="block w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+                  className="block w-full px-4 py-2.5 text-left text-sm text-slate-200 transition hover:bg-white/5"
                 >
                   Ajustes
                 </button>
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="block w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
+                  className="block w-full px-4 py-2.5 text-left text-sm text-red-300 transition hover:bg-red-400/10"
                 >
                   Cerrar sesion
                 </button>

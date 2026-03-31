@@ -72,7 +72,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-blue-900 p-4 sm:p-6 md:p-8 lg:p-10">
+    <div className="min-h-screen bg-[#020b24] p-4 sm:p-6 md:p-8 lg:p-10">
 
       <div className="text-center mb-8 md:mb-12">
 
