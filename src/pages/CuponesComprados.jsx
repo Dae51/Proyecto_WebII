@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { getCurrentSession } from "../resources/AuthService";
-import { getPurchasedCoupons } from "../resources/PurchaseService";
+import { clearCheckout, getPurchasedCoupons } from "../resources/PurchaseService";
 
 export default function CuponesComprados() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -17,10 +20,17 @@ export default function CuponesComprados() {
         toast.error(error.message || "No se pudo cargar el historial de compras.");
       }
 
+      if (userId && searchParams.get("pago") === "exito") {
+        clearCheckout(userId);
+        toast.success("Pago realizado con éxito.");
+        toast.success("Tus cupones fueron registrados correctamente.");
+        navigate("/cupones-comprados", { replace: true });
+      }
+
       setItems(purchasedItems ?? []);
       setLoading(false);
     })();
-  }, []);
+  }, [navigate, searchParams]);
 
   if (loading) {
     return (

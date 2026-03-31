@@ -1,6 +1,7 @@
 import { supabase } from "./supabaseClient";
 
 const CHECKOUT_KEY_PREFIX = "checkout_items_v1";
+const PURCHASE_STATUS_PAID = "pagado";
 
 function getUserKey(userId) {
   return userId || "guest";
@@ -145,6 +146,20 @@ export function clearCheckout(userId) {
   writeList(key, []);
 }
 
+export function buildCheckoutPaymentRequest({ userId, items }) {
+  const normalizedItems = (items ?? []).map(normalizeCartItem);
+  const total = normalizedItems.reduce(
+    (acc, item) => acc + (Number(item.subtotal) || 0),
+    0
+  );
+
+  return {
+    user_id: userId ?? null,
+    items: normalizedItems,
+    total,
+  };
+}
+
 function normalizeCartItem(item) {
   const quantity = normalizeQuantity(item?.cantidad ?? item?.quantity, 1);
   const unitPrice = toNumber(
@@ -219,7 +234,7 @@ export async function createCompra(cartItem, userId) {
       cantidad: normalized.cantidad,
       precio_unitario: normalized.precio_unitario,
       subtotal: normalized.subtotal,
-      estado: "pagado",
+      estado: PURCHASE_STATUS_PAID,
     })
     .select("id, user_id, cupon_id, cantidad, precio_unitario, subtotal, estado, comprado_en, created_at")
     .single();
