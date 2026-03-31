@@ -2,6 +2,7 @@
 import { supabase } from "./supabaseClient";
 // Se importan las funciones de normalización de texto y correo electrónico
 import { normalizeEmail, normalizeText } from "./validator";
+import { normalizeRole, USER_ROLES } from "./roles";
 
 // Función para construir un objeto de error de autenticación a partir de diferentes tipos de errores
 function buildAuthError(error, fallbackMessage) {
@@ -20,7 +21,8 @@ function buildAuthError(error, fallbackMessage) {
 export async function getCurrentSession() {
   try {
     const { data, error } = await supabase.auth.getSession();
-    return { session: data?.session ?? null, error };
+    const session = enrichSessionWithRole(data?.session ?? null);
+    return { session, error };
   } catch (error) {
     return {
       session: null,
@@ -31,7 +33,9 @@ export async function getCurrentSession() {
 
 // Función para suscribirse a los cambios de autenticación, devolviendo la suscripción creada por Supabase
 export function subscribeToAuthChanges(callback) {
-  const { data } = supabase.auth.onAuthStateChange(callback);
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    callback(event, enrichSessionWithRole(session));
+  });
   return data?.subscription ?? null;
 }
 
@@ -44,7 +48,13 @@ export async function loginWithPassword({ email, password }) {
       password,
     });
 
-    return { data, error };
+    return {
+      data: {
+        ...data,
+        session: enrichSessionWithRole(data?.session ?? null),
+      },
+      error,
+    };
   } catch (error) {
     return {
       data: null,
@@ -62,6 +72,7 @@ export async function registerWithPassword({
   address,
   phone,
   dui,
+  role = USER_ROLES.CLIENT,
   emailRedirectTo,
 }) {
   const normalizedEmail = normalizeEmail(email);
@@ -79,15 +90,23 @@ export async function registerWithPassword({
         data: {
           first_name: firstName,
           last_name: lastNameValue,
+          full_name: [firstName, lastNameValue].filter(Boolean).join(" ").trim(),
           address: addressValue,
           phone: phoneValue,
           dui: duiValue,
+          role: normalizeRole(role),
         },
         emailRedirectTo,
       },
     });
 
-    return { data, error };
+    return {
+      data: {
+        ...data,
+        session: enrichSessionWithRole(data?.session ?? null),
+      },
+      error,
+    };
   } catch (error) {
     return {
       data: null,
@@ -123,4 +142,22 @@ export async function updatePassword(password) {
       error: buildAuthError(error, "No se pudo actualizar la contraseña."),
     };
   }
+}
+
+export function getRoleFromUser(user) {
+  return normalizeRole(user?.user_metadata?.role);
+}
+
+export function enrichSessionWithRole(session) {
+  if (!session?.user) return session;
+
+  const role = getRoleFromUser(session.user);
+  return {
+    ...session,
+    user: {
+      ...session.user,
+      app_role: role,
+    },
+    app_role: role,
+  };
 }

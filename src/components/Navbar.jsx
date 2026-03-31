@@ -2,14 +2,14 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { supabase } from "../resources/supabaseClient";
+import { useAuth } from "../context/AuthContext";
+import { USER_ROLES } from "../resources/roles";
 
 export default function Navbar() {
-  
-  const [session, setSession] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
-  const user = session?.user ?? null;
+  const { isAuthenticated, role, roleLabel, session, user } = useAuth();
   const userMetadata = user?.user_metadata ?? {};
   const userDisplayName =
     [userMetadata.first_name, userMetadata.last_name].filter(Boolean).join(" ").trim() ||
@@ -17,32 +17,6 @@ export default function Navbar() {
     userMetadata.name ||
     user?.email ||
     "Usuario";
-
-  useEffect(() => {
-    let mounted = true;
-
-    const bootstrapSession = async () => {
-      const {
-        data: { session: currentSession },
-      } = await supabase.auth.getSession();
-
-      if (mounted) {
-        setSession(currentSession);
-      }
-    };
-
-    bootstrapSession();
-
-    const { data } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      if (!mounted) return;
-      setSession(currentSession);
-    });
-
-    return () => {
-      mounted = false;
-      data.subscription.unsubscribe();
-    };
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -86,10 +60,18 @@ export default function Navbar() {
       </p>
 
       <div className="flex items-center gap-3 sm:gap-4">
-        {session && (
+        {isAuthenticated && role === USER_ROLES.CLIENT && (
           <Link to="/cupones-comprados">
             <button className="text-white hover:text-white/90 transition font-bold text-sm sm:text-base">
               Mis cupones
+            </button>
+          </Link>
+        )}
+
+        {isAuthenticated && role !== USER_ROLES.CLIENT && (
+          <Link to="/dashboard">
+            <button className="text-white hover:text-white/90 transition font-bold text-sm sm:text-base">
+              Dashboard
             </button>
           </Link>
         )}
@@ -117,6 +99,9 @@ export default function Navbar() {
               title={userDisplayName}
             >
               {userDisplayName}
+            </span>
+            <span className="hidden lg:inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-cyan-50 border border-white/20">
+              {roleLabel}
             </span>
             <button
               type="button"

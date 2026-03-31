@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { toast } from "react-toastify"
 import { getCurrentSession } from "../resources/AuthService"
 import { addToCheckout } from "../resources/PurchaseService"
+import { USER_ROLES } from "../resources/roles"
 
 export default function OfferDetail() {
 
@@ -15,7 +16,7 @@ export default function OfferDetail() {
   React.useEffect(() => {
     (async () => {
       const { session } = await getCurrentSession()
-      setCanBuy(!!session?.user)
+      setCanBuy(!!session?.user && session?.app_role === USER_ROLES.CLIENT)
     })()
   }, [])
 
@@ -48,6 +49,12 @@ export default function OfferDetail() {
     if (!userId) {
       toast.info("Inicia sesión para comprar cupones.")
       navigate("/auth")
+      return
+    }
+
+    if (session?.app_role !== USER_ROLES.CLIENT) {
+      toast.error("Solo los clientes pueden comprar cupones.")
+      navigate("/dashboard")
       return
     }
 
