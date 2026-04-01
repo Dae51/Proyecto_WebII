@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import PaymentModal from "../components/PaymentModal";
 import { getCurrentSession } from "../resources/AuthService";
-import { createStripeCheckoutSession } from "../resources/PaymentService";
 import {
+  finalizeCheckout,
   getCheckoutItems,
   removeCheckoutItem,
   updateCheckoutQuantity,
@@ -11,10 +12,10 @@ import {
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [userId, setUserId] = useState(null);
   const [items, setItems] = useState([]);
-  const [isStartingPayment, setIsStartingPayment] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -24,15 +25,6 @@ export default function Checkout() {
       setItems(getCheckoutItems(nextUserId));
     })();
   }, []);
-
-  useEffect(() => {
-    if (searchParams.get("pago") !== "cancelado") {
-      return;
-    }
-
-    toast.info("El pago fue cancelado.");
-    navigate("/checkout", { replace: true });
-  }, [navigate, searchParams]);
 
   const total = useMemo(() => {
     return items.reduce((acc, item) => acc + (Number(item.subtotal) || 0), 0);
@@ -87,23 +79,29 @@ export default function Checkout() {
       return;
     }
 
-    void startStripeCheckout();
+    setIsPaymentModalOpen(true);
   }
 
-  async function startStripeCheckout() {
-    setIsStartingPayment(true);
-    const { checkoutUrl, error } = await createStripeCheckoutSession({
-      userId,
-      items,
-    });
-    setIsStartingPayment(false);
+  async function handleConfirmPayment() {
+    setIsFinalizing(true);
+    const { error } = await finalizeCheckout(userId);
+    setIsFinalizing(false);
 
     if (error) {
-      toast.error(error.message || "No se pudo iniciar el proceso de pago.");
-      return;
+      if (error.status === 401) {
+        toast.error("Tu sesión no es válida para completar la compra.");
+        navigate("/auth");
+        return false;
+      }
+
+      toast.error(error.message || "No se pudo finalizar la compra.");
+      return false;
     }
 
-    window.location.assign(checkoutUrl);
+    setIsPaymentModalOpen(false);
+    toast.success("Pago simulado procesado correctamente.");
+    navigate("/cupones-comprados");
+    return true;
   }
 
   return (
@@ -168,15 +166,23 @@ export default function Checkout() {
               <button
                 type="button"
                 onClick={handleFinalize}
-                disabled={isStartingPayment}
+                disabled={isFinalizing}
                 className="px-5 py-2 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition"
               >
-                {isStartingPayment ? "Redirigiendo a pago..." : "Finalizar Compra"}
+                {isFinalizing ? "Procesando..." : "Finalizar Compra"}
               </button>
             </div>
           </>
         )}
       </div>
+
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        total={total}
+        isSubmitting={isFinalizing}
+        onClose={() => setIsPaymentModalOpen(false)}
+        onSubmit={handleConfirmPayment}
+      />
     </div>
   );
 }
