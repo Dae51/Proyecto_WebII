@@ -298,7 +298,7 @@ export async function finalizeCheckout(userId) {
   return { purchasedItems: finalized, error: null };
 }
 
-export async function listComprasByUser(userId) {
+export async function listComprasByUser(userId, statusFilter = null) {
   if (!userId) {
     return {
       compras: [],
@@ -310,11 +310,17 @@ export async function listComprasByUser(userId) {
     };
   }
 
-  const { data: compras, error: comprasError } = await supabase
+  let query = supabase
     .from("compras")
     .select("id, user_id, cupon_id, cantidad, precio_unitario, subtotal, estado, comprado_en, created_at")
     .eq("user_id", userId)
     .order("comprado_en", { ascending: false });
+
+  if (statusFilter) {
+    query = query.eq("estado", statusFilter);
+  }
+
+  const { data: compras, error: comprasError } = await query;
 
   if (comprasError) {
     return {
@@ -338,7 +344,7 @@ export async function listComprasByUser(userId) {
   if (couponIds.length > 0) {
     const { data: couponsData, error: couponsError } = await supabase
       .from("cupones")
-      .select("id, title, description, image")
+      .select("*")
       .in("id", couponIds);
 
     if (couponsError) {
@@ -371,10 +377,11 @@ export async function listComprasByUser(userId) {
       estado: compra.estado,
       offer: {
         id: compra.cupon_id,
-        title: coupon?.title ?? `Cupon #${compra.cupon_id}`,
-        description: coupon?.description ?? "",
-        image_url: coupon?.image ?? null,
+        title: coupon?.title ?? coupon?.titulo ?? coupon?.nombre ?? `Cupon #${compra.cupon_id}`,
+        description: coupon?.description ?? coupon?.descripcion ?? "",
+        image_url: coupon?.image_url ?? coupon?.imagen_url ?? coupon?.imagen ?? coupon?.image ?? null,
         offer_price: unitPrice,
+        expiration_date: coupon?.end_date ?? coupon?.fecha_fin ?? coupon?.expires_at ?? null,
       },
     };
   });
@@ -382,7 +389,7 @@ export async function listComprasByUser(userId) {
   return { compras: normalized, error: null };
 }
 
-export async function getPurchasedCoupons(userId) {
-  const { compras, error } = await listComprasByUser(userId);
+export async function getPurchasedCoupons(userId, statusFilter = null) {
+  const { compras, error } = await listComprasByUser(userId, statusFilter);
   return { items: compras, error };
 }
