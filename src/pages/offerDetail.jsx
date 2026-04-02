@@ -1,17 +1,21 @@
 import React from "react"
-import { useLocation, useNavigate } from "react-router-dom"
+import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { toast } from "react-toastify"
 import { getCurrentSession } from "../resources/AuthService"
 import { addToCheckout } from "../resources/PurchaseService"
+import { getCuponPublicoById } from "../resources/CuponesService"
 import { USER_ROLES } from "../resources/roles"
 
 export default function OfferDetail() {
 
+  const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
-  const offer = location.state?.offer
+  const [offer, setOffer] = React.useState(location.state?.offer ?? null)
   const [quantity, setQuantity] = React.useState(1)
   const [canBuy, setCanBuy] = React.useState(false)
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState(null)
 
   React.useEffect(() => {
     (async () => {
@@ -20,10 +24,42 @@ export default function OfferDetail() {
     })()
   }, [])
 
-  if (!offer) {
+  React.useEffect(() => {
+    let active = true
+
+    ;(async () => {
+      const { cupon, error: fetchError } = await getCuponPublicoById(id)
+      if (!active) return
+
+      if (fetchError || !cupon) {
+        setOffer(null)
+        setError(fetchError?.message || "Oferta no encontrada.")
+        setLoading(false)
+        return
+      }
+
+      setOffer(cupon)
+      setError(null)
+      setLoading(false)
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [id])
+
+  if (loading) {
     return (
-      <div className="p-6 md:p-10 text-center">
-        Oferta no encontrada.
+      <div className="p-6 md:p-10 text-center text-white">
+        Cargando oferta...
+      </div>
+    )
+  }
+
+  if (error || !offer) {
+    return (
+      <div className="p-6 md:p-10 text-center text-white">
+        {error || "Oferta no encontrada."}
       </div>
     )
   }
@@ -31,6 +67,16 @@ export default function OfferDetail() {
   const regular = Number(offer.regular_price) || 0
   const offerPrice = Number(offer.offer_price) || 0
   const imageSrc = offer.image_url || "https://via.placeholder.com/900x600?text=Oferta"
+  const offerTerms = offer.terms
+    ? offer.terms
+        .split(/\r?\n+/)
+        .map((item) => item.trim())
+        .filter(Boolean)
+    : [
+        "Válido hasta agotar existencias.",
+        "No acumulable con otras promociones.",
+        "Presentar cupón al momento de pagar.",
+      ]
 
   function handleQuantityChange(event) {
     const next = Number(event.target.value)
@@ -162,9 +208,9 @@ export default function OfferDetail() {
         </h2>
 
         <ul className="list-disc pl-5 text-gray-600 space-y-2 text-sm sm:text-base">
-          <li>Válido hasta agotar existencias.</li>
-          <li>No acumulable con otras promociones.</li>
-          <li>Presentar cupón al momento de pagar.</li>
+          {offerTerms.map((term) => (
+            <li key={term}>{term}</li>
+          ))}
         </ul>
 
       </div>
