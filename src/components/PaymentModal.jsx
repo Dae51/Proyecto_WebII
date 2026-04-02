@@ -232,11 +232,8 @@ export default function PaymentModal({
               Pago seguro
             </p>
             <h2 className="mt-1 text-2xl font-extrabold text-slate-900">
-              Simulación de pago
+              Ingresa tus datos de pago
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Este es un formulario de pago simulado para fines académicos.
-            </p>
           </div>
 
           <button

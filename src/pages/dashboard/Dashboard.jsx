@@ -57,7 +57,7 @@ export default function Dashboard() {
         return (
           <OffersModule
             canApprove={role === USER_ROLES.ADMIN}
-            canCreate={userHasRole(role, [USER_ROLES.COMPANY_ADMIN])}
+            canCreate={userHasRole(role, [USER_ROLES.ADMIN, USER_ROLES.COMPANY_ADMIN])}
           />
         );
       case "employees":

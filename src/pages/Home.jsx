@@ -1,7 +1,7 @@
 import React from "react"
 import { useState, useEffect } from "react"
 import OfferCard from "../components/offerCard"
-import { getCupones, filterCuponesByTipo, normalizeTipoEnum } from "../resources/CuponesService"
+import { getCuponesActivos, filterCuponesByTipo, normalizeTipoEnum } from "../resources/CuponesService"
 
 const CATEGORY_FILTERS = [
   { value: "todas", label: "Todas" },
@@ -25,7 +25,7 @@ export default function Home() {
     let active = true
 
     ;(async () => {
-      const { cupones, error: fetchError } = await getCupones()
+      const { cupones, error: fetchError } = await getCuponesActivos()
       if (!active) return
 
       if (fetchError) {
