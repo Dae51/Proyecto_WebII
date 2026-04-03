@@ -1,7 +1,15 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-export function SectionCard({ title, subtitle, children, actionLabel, actionHref = "/", actionVisible = true }) {
+export function SectionCard({
+  title,
+  subtitle,
+  children,
+  actionLabel,
+  actionHref = "/",
+  actionVisible = true,
+  action = null,
+}) {
   return (
     <section className="rounded-[28px] bg-white p-6 shadow-xl">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -9,14 +17,18 @@ export function SectionCard({ title, subtitle, children, actionLabel, actionHref
           <h2 className="text-2xl font-black text-slate-900">{title}</h2>
           <p className="mt-2 text-sm text-slate-600">{subtitle}</p>
         </div>
-        {actionLabel && actionVisible ? (
-          <Link
-            to={actionHref}
-            className="inline-flex items-center justify-center rounded-full bg-cyan-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-amber-400 hover:text-black"
-          >
-            {actionLabel}
-          </Link>
-        ) : null}
+        {actionVisible
+          ? action ?? (
+              actionLabel ? (
+                <Link
+                  to={actionHref}
+                  className="inline-flex items-center justify-center rounded-full bg-cyan-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-amber-400 hover:text-black"
+                >
+                  {actionLabel}
+                </Link>
+              ) : null
+            )
+          : null}
       </div>
       <div className="mt-6">{children}</div>
     </section>
