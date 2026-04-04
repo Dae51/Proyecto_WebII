@@ -212,6 +212,7 @@ function normalizeCupon(row) {
     image: imageSrc,
     image_url: imageSrc,
     user_id: row.user_id ?? null,
+    stock: toNumber(row.stock ?? row.cantidad ?? row.limite ?? 0),
   };
 }
 
@@ -274,6 +275,12 @@ function validateCouponPayload(values) {
   }
   if (toNumber(values?.precio) <= 0) {
     return "El precio debe ser mayor que cero.";
+  }
+  if (!serializeDateTime(values?.expires_at)) {
+    return "La fecha de expiración es obligatoria.";
+  }
+  if (toNumber(values?.stock) < 1) {
+    return "El stock inicial debe ser de al menos 1 unidad.";
   }
   return null;
 }
@@ -343,6 +350,7 @@ function toCouponPayload({ values, imageUrl }) {
     precio: roundCurrency(toNumber(values?.precio)),
     expires_at: serializeDateTime(values?.expires_at),
     image: imageUrl ?? null,
+    stock: Math.floor(toNumber(values?.stock)),
   };
 }
 

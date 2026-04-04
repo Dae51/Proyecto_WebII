@@ -112,7 +112,7 @@ export default function Checkout() {
         </h1>
 
         {items.length === 0 ? (
-          <div className="bg-white rounded-2xl p-6 text-center text-gray-700">
+          <div className="bg-white rounded-2xl p-6 text-center text-gray-700 shadow-md">
             No hay cupones en tu checkout.
           </div>
         ) : (
@@ -121,7 +121,7 @@ export default function Checkout() {
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-white rounded-2xl p-4 flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between"
+                  className="bg-white rounded-2xl p-4 flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between shadow-md"
                 >
                   <div className="flex items-center gap-4">
                     <img
@@ -159,7 +159,7 @@ export default function Checkout() {
               ))}
             </div>
 
-            <div className="mt-6 bg-white rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="mt-6 bg-white rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-md">
               <p className="text-xl font-bold text-gray-900">
                 Total: ${total.toFixed(2)}
               </p>
@@ -167,7 +167,7 @@ export default function Checkout() {
                 type="button"
                 onClick={handleFinalize}
                 disabled={isFinalizing}
-                className="px-5 py-2 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition"
+                className="px-5 py-2 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition shadow-md active:scale-95 hover:scale-105"
               >
                 {isFinalizing ? "Procesando..." : "Finalizar Compra"}
               </button>

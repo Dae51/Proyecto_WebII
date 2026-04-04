@@ -39,6 +39,7 @@ export default function OfferCard({ offer, onSelect }) {
       hover:-translate-y-3
       hover:bg-black
       hover:shadow-amber-300
+      flex flex-col h-full
     ">
 
       {/* Imagen */}
@@ -62,13 +63,13 @@ export default function OfferCard({ offer, onSelect }) {
       </div>
 
       {/* Contenido */}
-      <div className="p-4 sm:p-6">
+      <div className="p-4 sm:p-6 flex flex-col flex-grow">
 
         <h2 className="text-lg sm:text-xl font-semibold mb-2 transition-colors duration-300 group-hover:text-amber-300">
           {offer.title}
         </h2>
 
-        <p className="text-gray-600 text-sm sm:text-base mb-4">
+        <p className="text-gray-600 text-sm sm:text-base mb-4 flex-grow">
           {offer.description}
         </p>
 
@@ -82,7 +83,7 @@ export default function OfferCard({ offer, onSelect }) {
           </span>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 mt-auto">
           {showSelectButton && (
             <button
               type="button"
@@ -98,6 +99,7 @@ export default function OfferCard({ offer, onSelect }) {
                 hover:opacity-90
                 hover:scale-105
                 text-white
+                font-semibold
                 text-sm sm:text-base
               "
             >
@@ -108,7 +110,7 @@ export default function OfferCard({ offer, onSelect }) {
           <Link to={`/offer/${offer.id}`} state={{ offer }} className="w-full">
             <button className="
               w-full
-              bg-cyan-950
+              bg-blue-600
               py-2
               sm:py-2.5
               rounded-xl
@@ -116,10 +118,10 @@ export default function OfferCard({ offer, onSelect }) {
               duration-300
               hover:opacity-90
               hover:scale-105
-              text-lime-50
+              hover:bg-blue-700
+              text-white
+              font-semibold
               text-sm sm:text-base
-              hover:bg-amber-400
-              hover:text-black
             ">
               Ver Oferta
             </button>

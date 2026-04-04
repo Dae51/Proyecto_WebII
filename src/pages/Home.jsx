@@ -57,16 +57,20 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="p-6 md:p-10 text-center text-lg md:text-xl">
-        Cargando ofertas...
+      <div className="min-h-screen bg-[#020b24] p-4 sm:p-6 md:p-8 lg:p-10 flex items-center justify-center">
+        <div className="text-center text-lg md:text-xl text-white">
+          Cargando ofertas...
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="p-6 md:p-10 text-center text-red-500">
-        {error}
+      <div className="min-h-screen bg-[#020b24] p-4 sm:p-6 md:p-8 lg:p-10 flex items-center justify-center">
+        <div className="text-center text-red-500">
+          {error}
+        </div>
       </div>
     )
   }
@@ -87,15 +91,15 @@ export default function Home() {
       </div>
 
       {/* Filtro */}
-      <div className="flex gap-3 md:gap-4 mb-6 flex-wrap justify-center md:justify-start">
+      <div className="flex gap-2 sm:gap-4 mb-6 flex-wrap justify-center md:justify-start w-full">
         {CATEGORY_FILTERS.map(cat => (
           <button
             key={cat.value}
             onClick={() => handleFilter(cat.value)}
-            className={`px-4 py-2 rounded-lg transition capitalize text-sm md:text-base
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg transition capitalize text-sm md:text-base text-center
               ${selectedCategory === cat.value
-                ? "bg-amber-200 text-black"
-                : "bg-white shadow"
+                ? "bg-amber-300 text-black font-bold shadow"
+                : "bg-white text-gray-700 hover:bg-gray-100 shadow-sm"
               }`}
           >
             {cat.label}

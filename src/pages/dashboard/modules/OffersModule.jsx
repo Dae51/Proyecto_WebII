@@ -28,6 +28,7 @@ const EMPTY_FORM = {
   category: CATEGORY_OPTIONS[0]?.value ?? "Restaurante",
   precio: "",
   expires_at: "",
+  stock: "",
 };
 
 const STATE_BADGE_STYLES = {
@@ -75,6 +76,7 @@ function toFormValues(coupon) {
     category: coupon.category ?? EMPTY_FORM.category,
     precio: coupon.precio ? String(coupon.precio) : "",
     expires_at: toDateTimeLocal(coupon.expires_at),
+    stock: coupon.stock !== undefined && coupon.stock !== null ? String(coupon.stock) : "",
   };
 }
 
@@ -200,6 +202,20 @@ function CouponForm({
           name="expires_at"
           value={form.expires_at}
           onChange={onInputChange}
+          className="rounded-2xl border border-slate-200 bg-white px-4 py-3 font-medium text-slate-900 outline-none transition focus:border-cyan-900"
+        />
+      </label>
+
+      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+        Stock disponible
+        <input
+          type="number"
+          name="stock"
+          min="1"
+          step="1"
+          value={form.stock}
+          onChange={onInputChange}
+          placeholder="Ej. 100"
           className="rounded-2xl border border-slate-200 bg-white px-4 py-3 font-medium text-slate-900 outline-none transition focus:border-cyan-900"
         />
       </label>
@@ -700,7 +716,7 @@ export default function OffersModule({ canApprove, canCreate }) {
                           <div className="min-w-0">
                             <p className="font-bold text-slate-900">{coupon.title}</p>
                             <p className="mt-1 text-xs font-medium text-slate-500">
-                              Código: {coupon.code || "Sin código"}
+                              Código: {coupon.code || "Sin código"} &bull; Stock: {coupon.stock || 0}
                             </p>
                             <p className="mt-2 line-clamp-2 text-xs text-slate-500">
                               {coupon.description || "Sin descripción"}

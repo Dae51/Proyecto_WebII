@@ -50,16 +50,20 @@ export default function OfferDetail() {
 
   if (loading) {
     return (
-      <div className="p-6 md:p-10 text-center text-white">
-        Cargando oferta...
+      <div className="min-h-screen bg-[#020b24] p-4 sm:p-6 md:p-8 lg:p-10 flex items-center justify-center">
+        <div className="text-center text-white text-lg md:text-xl">
+          Cargando oferta...
+        </div>
       </div>
     )
   }
 
   if (error || !offer) {
     return (
-      <div className="p-6 md:p-10 text-center text-white">
-        {error || "Oferta no encontrada."}
+      <div className="min-h-screen bg-[#020b24] p-4 sm:p-6 md:p-8 lg:p-10 flex items-center justify-center">
+        <div className="text-center text-red-500 text-lg md:text-xl">
+          {error || "Oferta no encontrada."}
+        </div>
       </div>
     )
   }
@@ -187,7 +191,7 @@ export default function OfferDetail() {
                 <button
                   type="button"
                   onClick={handleAddToCheckout}
-                  className="w-full bg-emerald-600 text-white py-2 sm:py-3 rounded-xl font-semibold hover:opacity-90 hover:scale-105 transition text-sm sm:text-base active:scale-95"
+                  className="w-full bg-emerald-600 text-white py-2 sm:py-3 rounded-xl font-semibold hover:opacity-90 hover:scale-105 transition shadow-md text-sm sm:text-base active:scale-95"
                 >
                   Comprar
                 </button>
