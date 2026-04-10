@@ -58,9 +58,9 @@ export default function ClientsModule() {
   if (hasAccess === false) {
     return (
       <SectionCard title="Acceso Restringido">
-        <div className="py-12 flex flex-col items-center justify-center text-center">
-          <p className="text-rose-600 font-bold mb-2">Permisos insuficientes</p>
-          <p className="text-slate-600 max-w-md">No tienes los privilegios necesarios para ver esta sección. Es estricta y únicamente para personal registrado como Administrador Principal.</p>
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <p className="mb-2 font-bold text-rose-400">Permisos insuficientes</p>
+          <p className="max-w-md text-slate-400">No tienes los privilegios necesarios para ver esta sección. Es estricta y únicamente para personal registrado como Administrador Principal.</p>
         </div>
       </SectionCard>
     );
@@ -84,11 +84,11 @@ export default function ClientsModule() {
       subtitle="Base de datos principal de clientes registrados a través de la tienda pública."
     >
       {hasAccess === null || loading ? (
-        <div className="py-12 flex items-center justify-center">
-          <p className="text-sm font-medium text-slate-500 animate-pulse">Obteniendo directorio de clientes...</p>
+        <div className="flex items-center justify-center py-12">
+          <p className="animate-pulse text-sm font-medium text-slate-500">Obteniendo directorio de clientes...</p>
         </div>
       ) : clientes.length === 0 ? (
-        <div className="py-12 text-center text-sm font-medium text-slate-500 border border-dashed border-slate-200 rounded-3xl">
+        <div className="rounded-3xl border border-dashed border-white/10 py-12 text-center text-sm font-medium text-slate-400">
           No hay registros de clientes encontrados o el listado se encuentra vacío en la base de datos.
         </div>
       ) : (
@@ -98,23 +98,23 @@ export default function ClientsModule() {
             rows={rows}
           />
 
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2 border-t border-slate-100 mt-4 pt-4">
+          <div className="mt-4 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-4 sm:flex-row">
             <span className="text-sm font-bold text-slate-500">
-              Página <span className="text-slate-900">{page + 1}</span> de <span className="text-slate-900">{totalPages || 1}</span>
+              Página <span className="text-white">{page + 1}</span> de <span className="text-white">{totalPages || 1}</span>
             </span>
 
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex w-full gap-2 sm:w-auto">
               <button
                 onClick={() => setPage(page - 1)}
                 disabled={page <= 0}
-                className="flex-1 sm:flex-none justify-center rounded-lg bg-white border border-slate-300 px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition disabled:opacity-40 disabled:hover:bg-white"
+                className="btn-secondary flex-1 justify-center sm:flex-none disabled:opacity-40"
               >
                 Anterior
               </button>
               <button
                 onClick={() => setPage(page + 1)}
                 disabled={page >= totalPages - 1}
-                className="flex-1 sm:flex-none justify-center rounded-lg bg-cyan-950 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-amber-400 hover:text-black transition disabled:opacity-40 disabled:hover:bg-cyan-950 disabled:hover:text-white"
+                className="btn-primary flex-1 justify-center sm:flex-none disabled:opacity-40"
               >
                 Siguiente
               </button>

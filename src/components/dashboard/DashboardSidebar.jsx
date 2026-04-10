@@ -25,28 +25,33 @@ export default function DashboardSidebar({
   }
 
   return (
-    <aside className="h-full rounded-[28px] bg-white p-5 shadow-xl">
-      <div className="rounded-3xl bg-cyan-600 p-5 text-white shadow-md">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-100">
+    <aside className="h-full rounded-[28px] border border-white/10 bg-[#07142f] p-5 shadow-xl">
+      {/* Header: identidad de la app */}
+      <div className="rounded-3xl border border-white/10 bg-[#020b24] p-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-400">
           Back-office
         </p>
-        <h2 className="mt-3 text-2xl font-black">La Cuponera</h2>
-        <div className="mt-4 rounded-2xl bg-white/10 p-4">
+        <h2 className="mt-3 text-2xl font-black text-white">La Cuponera</h2>
+
+        {/* Info del usuario */}
+        <div className="mt-4 rounded-2xl border border-white/8 bg-white/5 p-4">
           <p className="text-sm font-semibold text-white">{userName}</p>
-          <span className="mt-4 inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white">
+          <span className="mt-3 inline-flex rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-300">
             {roleLabel}
           </span>
         </div>
 
+        {/* Botón logout — gradiente amber idéntico al CTA del sitio público */}
         <button
           type="button"
           onClick={handleLogout}
-          className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-cyan-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-amber-400 hover:text-black"
+          className="btn-primary mt-4 w-full"
         >
           Cerrar sesion
         </button>
       </div>
 
+      {/* Navegación */}
       <nav className="mt-5 space-y-2">
         {modules.map((module) => {
           const isActive = module.id === activeModuleId;
@@ -58,12 +63,12 @@ export default function DashboardSidebar({
               onClick={() => onSelect(module.id)}
               className={`w-full rounded-2xl px-4 py-3 text-left transition ${
                 isActive
-                  ? "bg-cyan-950 text-white shadow-md"
-                  : "bg-slate-100 text-slate-700 hover:bg-amber-100 hover:text-slate-900"
+                  ? "bg-gradient-to-r from-amber-300 to-amber-400 text-black shadow-md shadow-amber-400/20"
+                  : "bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <p className="text-sm font-bold">{module.title}</p>
-              <p className={`mt-1 text-xs ${isActive ? "text-slate-200" : "text-slate-500"}`}>
+              <p className={`mt-1 text-xs ${isActive ? "text-black/60" : "text-slate-500"}`}>
                 {module.shortLabel}
               </p>
             </button>
