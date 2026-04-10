@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/* ─── Design Tokens ─────────────────────────────────────────────────────────
+   Paleta alineada al sitio público (fondo navy oscuro + acento amber/cyan).
+   Se definen como custom properties de CSS y se exponen como utilidades de
+   Tailwind a través de @theme para poder usarlas con bg-*, text-*, etc.
+─────────────────────────────────────────────────────────────────────────── */
+@theme inline {
+  /* Superficies */
+  --color-surface-page:    #020b24;
+  --color-surface-card:    #07142f;
+  --color-surface-raised:  #08173d;
+  --color-surface-inset:   rgba(255, 255, 255, 0.04);
+
+  /* Bordes translúcidos */
+  --color-border-subtle:   rgba(255, 255, 255, 0.08);
+  --color-border-default:  rgba(255, 255, 255, 0.12);
+}
+
 :root {
   --app-bg-color: #020b24;
 }
@@ -13,4 +30,64 @@ body,
 
 body {
   min-height: 100vh;
+}
+
+/* ─── Backoffice — estilos compartidos ──────────────────────────────────── */
+
+/* Botón primario: gradiente amber (idéntico al CTA del sitio público) */
+.btn-primary {
+  @apply inline-flex items-center justify-center rounded-full
+         bg-gradient-to-r from-amber-300 to-amber-400
+         px-5 py-2.5 text-sm font-bold text-black
+         transition hover:opacity-90
+         disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+/* Botón secundario: translúcido */
+.btn-secondary {
+  @apply inline-flex items-center justify-center rounded-full
+         border border-white/10 bg-white/5
+         px-5 py-2.5 text-sm font-bold text-slate-200
+         transition hover:bg-white/10
+         disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+/* Input / select / textarea del backoffice */
+.bo-input {
+  @apply rounded-2xl border border-white/10 bg-white/5
+         px-4 py-3 text-sm font-medium text-white
+         outline-none transition
+         placeholder:text-slate-500
+         focus:border-amber-400
+         disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+/* Variante con error */
+.bo-input-error {
+  @apply rounded-2xl border border-rose-500/50 bg-rose-500/10
+         px-4 py-3 text-sm font-medium text-white
+         outline-none transition
+         placeholder:text-slate-500
+         focus:border-rose-500;
+}
+
+/* Label del formulario */
+.bo-label {
+  @apply text-sm font-semibold text-slate-300;
+}
+
+/* Scrollbar personalizada para el modal */
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }

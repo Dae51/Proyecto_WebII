@@ -6,7 +6,7 @@ import { fetchCategorias, createCategoria, updateCategoria, deleteCategoria } fr
 export default function CategoriesModule({ canManage }) {
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // State for Create/Edit form
   const [newCategoryName, setNewCategoryName] = useState("");
   const [editingId, setEditingId] = useState(null);
@@ -29,12 +29,12 @@ export default function CategoriesModule({ canManage }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const name = newCategoryName.trim();
-    
+
     if (!name) {
       toast.error("El nombre del rubro no puede estar vacío.");
       return;
     }
-    
+
     if (editingId) {
       // Update Logic
       const { data, error } = await updateCategoria(editingId, name);
@@ -52,7 +52,7 @@ export default function CategoriesModule({ canManage }) {
         toast.warn("Ya existe un rubro con ese nombre.");
         return;
       }
-  
+
       const { data, error } = await createCategoria(name);
       if (error) {
         toast.error("Error al crear el rubro: " + error.message);
@@ -89,29 +89,29 @@ export default function CategoriesModule({ canManage }) {
   const rows = categorias.map((item) => {
     return [
       // Cell 1: Category Name
-      <span className="font-semibold text-slate-900">{item.categories}</span>,
-      
+      <span className="font-semibold text-white">{item.categories}</span>,
+
       // Cell 2: Creation Date
-      new Date(item.created_at).toLocaleDateString(),
-      
+      <span className="text-slate-400">{new Date(item.created_at).toLocaleDateString()}</span>,
+
       // Cell 3: Actions
       canManage ? (
         <div className="flex gap-3">
           <button
             onClick={() => startEdit(item)}
-            className="text-xs font-bold text-cyan-700 hover:text-cyan-800 transition"
+            className="text-xs font-bold text-cyan-400 transition hover:text-cyan-300"
           >
             Editar
           </button>
           <button
             onClick={() => handleDelete(item.id)}
-            className="text-xs font-bold text-rose-600 hover:text-rose-700 transition"
+            className="text-xs font-bold text-rose-400 transition hover:text-rose-300"
           >
             Borrar
           </button>
         </div>
       ) : (
-        <span className="text-xs text-slate-400">Sólo lectura</span>
+        <span className="text-xs text-slate-500">Sólo lectura</span>
       )
     ];
   });
@@ -124,19 +124,22 @@ export default function CategoriesModule({ canManage }) {
     >
       <div className="mb-6 space-y-6">
         {canManage && (
-          <form onSubmit={handleSubmit} className="flex flex-col items-start gap-4 sm:flex-row sm:items-center rounded-[20px] bg-slate-50 p-4 border border-slate-100">
-            <div className="flex-1 w-full max-w-sm">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col items-start gap-4 rounded-[20px] border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center"
+          >
+            <div className="w-full max-w-sm flex-1">
               <input
                 type="text"
                 placeholder={editingId ? "Actualizar nombre del rubro..." : "Escribe el nombre del nuevo rubro..."}
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                className="bo-input w-full"
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
               />
             </div>
             <button
               type="submit"
-              className="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-cyan-950 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-amber-400 hover:text-black transition"
+              className="btn-primary w-full sm:w-auto"
             >
               {editingId ? "Actualizar Categoría" : "Crear Categoría"}
             </button>
@@ -144,7 +147,7 @@ export default function CategoriesModule({ canManage }) {
               <button
                 type="button"
                 onClick={cancelEdit}
-                className="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-slate-400 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-slate-500 transition"
+                className="btn-secondary w-full sm:w-auto"
               >
                 Cancelar
               </button>
@@ -157,7 +160,7 @@ export default function CategoriesModule({ canManage }) {
             Cargando el catálogo de rubros...
           </div>
         ) : categorias.length === 0 ? (
-          <div className="py-8 text-center text-sm font-medium text-slate-500 border border-dashed border-slate-200 rounded-3xl">
+          <div className="rounded-3xl border border-dashed border-white/10 py-8 text-center text-sm font-medium text-slate-400">
             Aún no hay categorías registradas en la plataforma.
           </div>
         ) : (

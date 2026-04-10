@@ -63,7 +63,7 @@ export default function Dashboard() {
       case "employees":
         return <EmployeesModule canManage={role === USER_ROLES.COMPANY_ADMIN} />;
       case "redeem":
-        return <RedeemModule canRedeem={userHasRole(role, [USER_ROLES.COMPANY_ADMIN, USER_ROLES.EMPLOYEE])} />;
+        return <RedeemModule canRedeem={userHasRole(role, [USER_ROLES.EMPLOYEE])} />;
       case "overview":
       default:
         return (
@@ -80,7 +80,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-blue-900 px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#020b24] px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           <div className="w-full lg:sticky lg:top-6 lg:w-[300px] lg:flex-shrink-0">

@@ -2,7 +2,12 @@ import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getCurrentSession } from "../resources/AuthService";
-import { clearCheckout, getPurchasedCoupons } from "../resources/PurchaseService";
+import {
+  clearCheckout,
+  getPurchasedCoupons,
+  isPurchaseRedeemed,
+  PURCHASE_STATES,
+} from "../resources/PurchaseService";
 import { generarCuponPDF, generarListaCuponesPDF } from "../resources/PDFService";
 
 export default function CuponesComprados() {
@@ -29,7 +34,7 @@ export default function CuponesComprados() {
       let fetchedItems = [];
 
       if (activeTab === "canjeados") {
-        const { items: purchasedItems, error } = await getPurchasedCoupons(userId, "canjeado");
+        const { items: purchasedItems, error } = await getPurchasedCoupons(userId, PURCHASE_STATES.REDEEMED);
         if (error && error.status !== 401) {
           toast.error(error.message || "No se pudo cargar el historial de compras.");
         }
@@ -43,7 +48,7 @@ export default function CuponesComprados() {
         const today = new Date();
 
         fetchedItems = (purchasedItems ?? []).filter((item) => {
-          if (item.estado === "canjeado") return false;
+          if (isPurchaseRedeemed(item.estado)) return false;
 
           const expDate = item.offer?.expiration_date ? new Date(item.offer.expiration_date) : null;
           const isExpired = expDate ? expDate < today : false;
@@ -155,7 +160,7 @@ export default function CuponesComprados() {
                         Vence: {new Date(item.offer.expiration_date).toLocaleDateString()}
                       </p>
                     )}
-                    {item.estado === "canjeado" && (
+                    {isPurchaseRedeemed(item.estado) && (
                       <div className="mt-2">
                         <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded font-bold">
                           Canjeado

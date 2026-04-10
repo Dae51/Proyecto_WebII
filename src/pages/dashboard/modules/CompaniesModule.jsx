@@ -14,23 +14,23 @@ import {
 const Modal = ({ isOpen, title, onClose, onSubmit, children, isSubmitting }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm transition-opacity">
-      <div className="w-full max-w-xl rounded-3xl bg-white p-6 md:p-8 shadow-2xl overflow-y-auto max-h-[90vh] custom-scroll relative">
-        <h3 className="text-2xl font-black text-slate-900 mb-6">{title}</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur-sm">
+      <div className="custom-scroll relative w-full max-w-xl overflow-y-auto rounded-[28px] border border-white/10 bg-[#07142f] p-6 shadow-2xl max-h-[90vh] md:p-8">
+        <h3 className="mb-6 text-2xl font-black text-white">{title}</h3>
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           {children}
-          <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-slate-100">
+          <div className="mt-8 flex justify-end gap-3 border-t border-white/10 pt-6">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl px-5 py-2.5 font-bold text-slate-500 hover:bg-slate-100 transition disabled:opacity-50"
+              className="btn-secondary"
               disabled={isSubmitting}
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="rounded-xl bg-cyan-950 px-6 py-2.5 font-bold text-white shadow-md hover:bg-amber-400 hover:text-black transition disabled:opacity-50"
+              className="btn-primary"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Guardando..." : "Guardar"}
@@ -133,7 +133,7 @@ export default function CompaniesModule({ canManage }) {
     if (!formData.name?.trim()) currErrors.name = "El nombre de la empresa es obligatorio";
     if (!formData.address?.trim()) currErrors.address = "Debes proveer una dirección";
     if (!formData.contact_name?.trim()) currErrors.contact_name = "El encargado/contacto es requerido";
-    
+
     // Mail Regex Check
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.mail?.trim() || !emailRegex.test(formData.mail)) {
@@ -187,42 +187,39 @@ export default function CompaniesModule({ canManage }) {
     }
   };
 
-  // Build the dataset specifically to list via the DataTable component.
-  // Note: Here I am rendering Category directly if it's the exact string, otherwise I can map via the array to fetch names.
   const getCategoryName = (identifier) => {
-    // Assuming `categories` table usually has `id` and `categories` as strings based on recent CRUD changes
     const catObj = categorias.find(c => String(c.id) === String(identifier) || c.categories === identifier);
     return catObj ? catObj.categories : identifier || "Sin rubro";
   };
 
   const rows = empresas.map(emp => [
     <div className="flex flex-col">
-      <span className="font-bold text-slate-900">{emp.name}</span>
-      <span className="text-xs text-slate-500">{emp.mail}</span>
+      <span className="font-bold text-white">{emp.name}</span>
+      <span className="text-xs text-slate-400">{emp.mail}</span>
     </div>,
-    <span className="font-mono text-xs font-semibold px-2 py-1 bg-amber-100 text-amber-800 rounded-md tracking-widest">{emp.code}</span>,
+    <span className="font-mono text-xs font-semibold rounded-md border border-amber-400/20 bg-amber-400/10 px-2 py-1 tracking-widest text-amber-300">{emp.code}</span>,
     <div className="flex flex-col">
-      <span className="text-slate-700">{emp.contact_name}</span>
-      <span className="text-xs text-slate-400">{emp.phone}</span>
+      <span className="text-slate-300">{emp.contact_name}</span>
+      <span className="text-xs text-slate-500">{emp.phone}</span>
     </div>,
     getCategoryName(emp.category),
     canManage ? (
       <div className="flex gap-3">
         <button
           onClick={() => openEditModal(emp)}
-          className="text-xs font-bold text-cyan-700 hover:text-cyan-800 transition"
+          className="text-xs font-bold text-cyan-400 transition hover:text-cyan-300"
         >
           Editar
         </button>
         <button
           onClick={() => handleDelete(emp.id)}
-          className="text-xs font-bold text-rose-600 hover:text-rose-700 transition"
+          className="text-xs font-bold text-rose-400 transition hover:text-rose-300"
         >
           Borrar
         </button>
       </div>
     ) : (
-      <span className="text-xs text-slate-400 font-semibold italic">Sólo vista</span>
+      <span className="text-xs italic text-slate-500">Sólo vista</span>
     )
   ]);
 
@@ -233,25 +230,25 @@ export default function CompaniesModule({ canManage }) {
         subtitle="Directorio maestro para registrar las marcas y sus encargados para ofertar en el portal."
         actionVisible={canManage}
         action={
-          <button 
+          <button
             onClick={openCreateModal}
-            className="inline-flex items-center justify-center rounded-xl bg-cyan-950 px-5 py-2.5 text-sm font-bold text-white shadow-xl transition hover:-translate-y-1 hover:bg-amber-400 hover:text-cyan-950"
+            className="btn-primary hover:-translate-y-1"
           >
             Añadir Empresa
           </button>
         }
       >
         <div className="grid gap-4 md:grid-cols-3">
-          <StatCard title="Empresas registradas" value={loading ? "-" : String(empresas.length).padStart(2, '0')} accent="text-cyan-700" />
-          <StatCard title="Categorías base" value={loading ? "-" : String(categorias.length).padStart(2, '0')} accent="text-emerald-600" />
-          <StatCard title="Estado Central" value="Seguro" accent="text-amber-500" />
+          <StatCard title="Empresas registradas" value={loading ? "-" : String(empresas.length).padStart(2, '0')} accent="text-cyan-400" />
+          <StatCard title="Categorías base" value={loading ? "-" : String(categorias.length).padStart(2, '0')} accent="text-emerald-400" />
+          <StatCard title="Estado Central" value="Seguro" accent="text-amber-400" />
         </div>
-        
+
         <div className="mt-8">
           {loading ? (
-             <div className="py-12 text-center text-sm font-medium text-slate-500 animate-pulse">Obteniendo listado empresarial...</div>
+            <div className="animate-pulse py-12 text-center text-sm font-medium text-slate-500">Obteniendo listado empresarial...</div>
           ) : empresas.length === 0 ? (
-             <div className="py-12 text-center text-sm font-medium text-slate-500 border border-dashed border-slate-200 rounded-3xl">El tablero está vacío. Agrega tu primera compañía ofertante para arrancar.</div>
+            <div className="rounded-3xl border border-dashed border-white/10 py-12 text-center text-sm font-medium text-slate-400">El tablero está vacío. Agrega tu primera compañía ofertante para arrancar.</div>
           ) : (
             <DataTable
               columns={["Empresa Comercial", "Código Asignado", "Punto de Contacto", "Rubro / Categoría", "Acciones Administrativas"]}
@@ -269,97 +266,97 @@ export default function CompaniesModule({ canManage }) {
         isSubmitting={isSubmitting}
       >
         {/* Row 1 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-bold text-slate-700">Nombre de la Empresa</label>
+            <label className="bo-label">Nombre de la Empresa</label>
             <input
               type="text"
               placeholder="Ej: InnovaCorp S.A."
               value={formData.name}
               onChange={(e) => handleChange("name", e.target.value)}
-              className={`rounded-lg border px-4 py-2.5 text-sm outline-none focus:ring-1 ${errors.name ? 'border-rose-400 bg-rose-50 focus:border-rose-500 focus:ring-rose-500' : 'border-slate-300 bg-white focus:border-cyan-500 focus:ring-cyan-500'}`}
+              className={errors.name ? "bo-input-error" : "bo-input"}
             />
-            {errors.name && <span className="text-xs font-semibold text-rose-600">{errors.name}</span>}
+            {errors.name && <span className="text-xs font-semibold text-rose-400">{errors.name}</span>}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-bold text-slate-700">Código de Referencia (Auto)</label>
+            <label className="bo-label">Código de Referencia (Auto)</label>
             <input
               type="text"
               readOnly
               value={formData.code}
-              className="rounded-lg border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-mono font-bold tracking-[0.25em] text-slate-600 outline-none select-none cursor-not-allowed"
+              className="bo-input cursor-not-allowed font-mono tracking-[0.25em] opacity-60"
             />
-            <span className="text-xs font-semibold text-slate-400">Sólo lectura (generado por hash)</span>
+            <span className="text-xs font-semibold text-slate-500">Sólo lectura (generado por hash)</span>
           </div>
         </div>
 
         {/* Row 2 */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-bold text-slate-700">Correo Electrónico (Representante o Facturación)</label>
+          <label className="bo-label">Correo Electrónico (Representante o Facturación)</label>
           <input
             type="email"
             placeholder="facturacion@empresa.com"
             value={formData.mail}
             onChange={(e) => handleChange("mail", e.target.value)}
-            className={`rounded-lg border px-4 py-2.5 text-sm outline-none focus:ring-1 ${errors.mail ? 'border-rose-400 bg-rose-50 focus:border-rose-500 focus:ring-rose-500' : 'border-slate-300 bg-white focus:border-cyan-500 focus:ring-cyan-500'}`}
+            className={errors.mail ? "bo-input-error" : "bo-input"}
           />
-          {errors.mail && <span className="text-xs font-semibold text-rose-600">{errors.mail}</span>}
+          {errors.mail && <span className="text-xs font-semibold text-rose-400">{errors.mail}</span>}
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-bold text-slate-700">Dirección Operativa Base</label>
+          <label className="bo-label">Dirección Operativa Base</label>
           <input
             type="text"
             placeholder="Av. Las Magnolias, Edificio X Local 5"
             value={formData.address}
             onChange={(e) => handleChange("address", e.target.value)}
-            className={`rounded-lg border px-4 py-2.5 text-sm outline-none focus:ring-1 ${errors.address ? 'border-rose-400 bg-rose-50 focus:border-rose-500 focus:ring-rose-500' : 'border-slate-300 bg-white focus:border-cyan-500 focus:ring-cyan-500'}`}
+            className={errors.address ? "bo-input-error" : "bo-input"}
           />
-          {errors.address && <span className="text-xs font-semibold text-rose-600">{errors.address}</span>}
+          {errors.address && <span className="text-xs font-semibold text-rose-400">{errors.address}</span>}
         </div>
 
         {/* Row 3 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="flex flex-col gap-1.5 md:col-span-1">
-            <label className="text-sm font-bold text-slate-700">Categoría Asociada</label>
+            <label className="bo-label">Categoría Asociada</label>
             <select
               value={formData.category}
               onChange={(e) => handleChange("category", e.target.value)}
-              className={`rounded-lg border px-4 py-2.5 text-sm outline-none focus:ring-1 ${errors.category ? 'border-rose-400 bg-rose-50 focus:border-rose-500 focus:ring-rose-500' : 'border-slate-300 bg-white focus:border-cyan-500 focus:ring-cyan-500'}`}
+              className={errors.category ? "bo-input-error" : "bo-input"}
             >
-              <option value="" disabled hidden>Elige opc...</option>
+              <option value="" disabled hidden className="bg-[#07142f]">Elige opc...</option>
               {categorias.map(c => (
-                <option key={c.id} value={c.categories /* Or c.id depending on strict schema, we fallback to strictly visual relation since prompt specifies it as FK but could just be storing string or ID */}>
+                <option key={c.id} value={c.categories} className="bg-[#07142f] text-white">
                   {c.categories}
                 </option>
               ))}
             </select>
-            {errors.category && <span className="text-xs font-semibold text-rose-600">{errors.category}</span>}
+            {errors.category && <span className="text-xs font-semibold text-rose-400">{errors.category}</span>}
           </div>
 
           <div className="flex flex-col gap-1.5 md:col-span-1">
-            <label className="text-sm font-bold text-slate-700">Nombre del Encargado</label>
+            <label className="bo-label">Nombre del Encargado</label>
             <input
               type="text"
               placeholder="José D."
               value={formData.contact_name}
               onChange={(e) => handleChange("contact_name", e.target.value)}
-              className={`rounded-lg border px-4 py-2.5 text-sm outline-none focus:ring-1 ${errors.contact_name ? 'border-rose-400 bg-rose-50 focus:border-rose-500 focus:ring-rose-500' : 'border-slate-300 bg-white focus:border-cyan-500 focus:ring-cyan-500'}`}
+              className={errors.contact_name ? "bo-input-error" : "bo-input"}
             />
-            {errors.contact_name && <span className="text-xs font-semibold text-rose-600">{errors.contact_name}</span>}
+            {errors.contact_name && <span className="text-xs font-semibold text-rose-400">{errors.contact_name}</span>}
           </div>
 
           <div className="flex flex-col gap-1.5 md:col-span-1">
-            <label className="text-sm font-bold text-slate-700">Teléfono SV</label>
+            <label className="bo-label">Teléfono SV</label>
             <input
               type="text"
               placeholder="7000-0000"
               value={formData.phone}
               onChange={handlePhoneChange}
-              className={`rounded-lg border px-4 py-2.5 text-sm font-mono outline-none focus:ring-1 ${errors.phone ? 'border-rose-400 bg-rose-50 focus:border-rose-500 focus:ring-rose-500' : 'border-slate-300 bg-white focus:border-cyan-500 focus:ring-cyan-500'}`}
+              className={`font-mono ${errors.phone ? "bo-input-error" : "bo-input"}`}
             />
-            {errors.phone && <span className="text-xs font-semibold text-rose-600">{errors.phone}</span>}
+            {errors.phone && <span className="text-xs font-semibold text-rose-400">{errors.phone}</span>}
           </div>
         </div>
       </Modal>

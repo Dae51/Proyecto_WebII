@@ -34,10 +34,10 @@ const EMPTY_FORM = {
 };
 
 const STATE_BADGE_STYLES = {
-  [COUPON_STATES.PENDING]: "bg-amber-100 text-amber-900",
-  [COUPON_STATES.APPROVED]: "bg-emerald-100 text-emerald-800",
-  [COUPON_STATES.REJECTED]: "bg-rose-100 text-rose-700",
-  [COUPON_STATES.ELIMINATED]: "bg-slate-200 text-slate-700",
+  [COUPON_STATES.PENDING]:   "border border-amber-400/30 bg-amber-400/10 text-amber-300",
+  [COUPON_STATES.APPROVED]:  "border border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
+  [COUPON_STATES.REJECTED]:  "border border-rose-400/30 bg-rose-400/10 text-rose-400",
+  [COUPON_STATES.ELIMINATED]:"border border-white/10 bg-white/5 text-slate-400",
 };
 
 function formatCurrency(value) {
@@ -85,7 +85,7 @@ function toFormValues(coupon) {
 function StateBadge({ state }) {
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${STATE_BADGE_STYLES[state] ?? "bg-slate-100 text-slate-700"}`}
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${STATE_BADGE_STYLES[state] ?? "border border-white/10 bg-white/5 text-slate-400"}`}
     >
       {getCouponStateLabel(state)}
     </span>
@@ -97,10 +97,11 @@ function FilterButton({ active, label, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-4 py-2 text-sm font-semibold transition ${active
-          ? "bg-cyan-950 text-white"
-          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-        }`}
+      className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+        active
+          ? "bg-gradient-to-r from-amber-300 to-amber-400 text-black shadow-sm shadow-amber-400/20"
+          : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
+      }`}
     >
       {label}
     </button>
@@ -110,12 +111,12 @@ function FilterButton({ active, label, onClick }) {
 function ActionButton({ tone = "default", disabled = false, onClick, children, className = "" }) {
   const styles =
     tone === "approve"
-      ? "bg-emerald-600 text-white hover:bg-emerald-700"
+      ? "border border-emerald-400/30 bg-emerald-400/15 text-emerald-300 hover:bg-emerald-400/25"
       : tone === "reject"
-        ? "bg-rose-600 text-white hover:bg-rose-700"
+        ? "border border-rose-400/30 bg-rose-400/15 text-rose-400 hover:bg-rose-400/25"
         : tone === "danger"
-          ? "bg-slate-800 text-white hover:bg-black"
-          : "bg-slate-100 text-slate-800 hover:bg-slate-200";
+          ? "border border-rose-400/20 bg-white/5 text-rose-400 hover:bg-rose-400/15"
+          : "border border-white/10 bg-white/8 text-slate-200 hover:bg-white/15";
 
   return (
     <button
@@ -142,7 +143,7 @@ function CouponForm({
 }) {
   return (
     <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+      <label className="flex flex-col gap-2 bo-label">
         Código (Autogenerado)
         <input
           type="text"
@@ -150,11 +151,11 @@ function CouponForm({
           value={form.code}
           disabled={true}
           readOnly
-          className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-bold text-slate-500 outline-none transition disabled:cursor-not-allowed"
+          className="bo-input font-bold opacity-60"
         />
       </label>
 
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+      <label className="flex flex-col gap-2 bo-label">
         Título
         <input
           type="text"
@@ -162,27 +163,27 @@ function CouponForm({
           value={form.title}
           onChange={onInputChange}
           placeholder="Ej. 2x1 en Pizza Familiar"
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-3 font-medium text-slate-900 outline-none transition focus:border-cyan-900"
+          className="bo-input"
         />
       </label>
 
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+      <label className="flex flex-col gap-2 bo-label">
         Categoría
         <select
           name="category"
           value={form.category}
           onChange={onInputChange}
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-3 font-medium text-slate-900 outline-none transition focus:border-cyan-900"
+          className="bo-input"
         >
           {CATEGORY_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option key={option.value} value={option.value} className="bg-[#07142f] text-white">
               {option.label}
             </option>
           ))}
         </select>
       </label>
 
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+      <label className="flex flex-col gap-2 bo-label">
         Precio
         <input
           type="number"
@@ -192,22 +193,22 @@ function CouponForm({
           value={form.precio}
           onChange={onInputChange}
           placeholder="19.99"
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-3 font-medium text-slate-900 outline-none transition focus:border-cyan-900"
+          className="bo-input"
         />
       </label>
 
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+      <label className="flex flex-col gap-2 bo-label">
         Fecha de vencimiento
         <input
           type="datetime-local"
           name="expires_at"
           value={form.expires_at}
           onChange={onInputChange}
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-3 font-medium text-slate-900 outline-none transition focus:border-cyan-900"
+          className="bo-input"
         />
       </label>
 
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+      <label className="flex flex-col gap-2 bo-label">
         Stock disponible
         <input
           type="number"
@@ -217,22 +218,22 @@ function CouponForm({
           value={form.stock}
           onChange={onInputChange}
           placeholder="Ej. 100"
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-3 font-medium text-slate-900 outline-none transition focus:border-cyan-900"
+          className="bo-input"
         />
       </label>
 
-      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+      <label className="flex flex-col gap-2 bo-label">
         Imagen
         <input
           key={fileInputKey}
           type="file"
           accept="image/png,image/jpeg,image/webp"
           onChange={onImageChange}
-          className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 outline-none transition file:mr-4 file:rounded-full file:border-0 file:bg-cyan-950 file:px-4 file:py-2 file:font-semibold file:text-white hover:file:bg-amber-400 hover:file:text-black"
+          className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-3 text-sm text-slate-400 outline-none transition file:mr-4 file:rounded-full file:border-0 file:bg-gradient-to-r file:from-amber-300 file:to-amber-400 file:px-4 file:py-2 file:font-semibold file:text-black hover:file:opacity-80"
         />
       </label>
 
-      <label className="md:col-span-2 flex flex-col gap-2 text-sm font-semibold text-slate-700">
+      <label className="md:col-span-2 flex flex-col gap-2 bo-label">
         Descripción
         <textarea
           name="description"
@@ -240,11 +241,11 @@ function CouponForm({
           onChange={onInputChange}
           rows={4}
           placeholder="Describe el beneficio principal del cupón."
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-3 font-medium text-slate-900 outline-none transition focus:border-cyan-900"
+          className="bo-input"
         />
       </label>
 
-      <label className="md:col-span-2 flex flex-col gap-2 text-sm font-semibold text-slate-700">
+      <label className="md:col-span-2 flex flex-col gap-2 bo-label">
         Términos y condiciones
         <textarea
           name="terms"
@@ -252,7 +253,7 @@ function CouponForm({
           onChange={onInputChange}
           rows={4}
           placeholder="Cada condición puede ir en una línea distinta."
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-3 font-medium text-slate-900 outline-none transition focus:border-cyan-900"
+          className="bo-input"
         />
       </label>
 
@@ -262,14 +263,14 @@ function CouponForm({
             <img
               src={previewUrl}
               alt={form.title || "Vista previa del cupón"}
-              className="h-24 w-32 rounded-2xl object-cover shadow-sm"
+              className="h-24 w-32 rounded-2xl object-cover shadow-sm ring-1 ring-white/10"
             />
           ) : (
-            <div className="flex h-24 w-32 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white text-xs font-semibold text-slate-400">
+            <div className="flex h-24 w-32 items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/5 text-xs font-semibold text-slate-500">
               Sin imagen
             </div>
           )}
-          <div className="text-sm text-slate-500">
+          <div className="text-sm text-slate-400">
             <p>Formatos permitidos: JPG, PNG y WEBP.</p>
             <p>
               {isEditing
@@ -284,14 +285,14 @@ function CouponForm({
             type="button"
             onClick={onCancel}
             disabled={saving}
-            className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn-secondary"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex items-center justify-center rounded-full bg-cyan-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-amber-400 hover:text-black disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn-primary"
           >
             {saving
               ? "Guardando..."
@@ -337,7 +338,7 @@ function CouponModal({ isOpen, isBusy, title, subtitle, onClose, children }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4 py-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 py-6 backdrop-blur-sm"
       onClick={handleBackdropClick}
       role="presentation"
     >
@@ -345,24 +346,24 @@ function CouponModal({ isOpen, isBusy, title, subtitle, onClose, children }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="coupon-form-modal-title"
-        className="w-full max-w-4xl overflow-hidden rounded-[28px] bg-white shadow-2xl"
+        className="w-full max-w-4xl overflow-hidden rounded-[28px] border border-white/10 bg-[#07142f] shadow-2xl"
       >
-        <div className="flex items-start justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
+        <div className="flex items-start justify-between border-b border-white/10 px-5 py-4 sm:px-6">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-500">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-400">
               Gestión de ofertas
             </p>
-            <h3 id="coupon-form-modal-title" className="mt-1 text-2xl font-extrabold text-slate-900">
+            <h3 id="coupon-form-modal-title" className="mt-1 text-2xl font-extrabold text-white">
               {title}
             </h3>
-            <p className="mt-2 text-sm text-slate-600">{subtitle}</p>
+            <p className="mt-2 text-sm text-slate-400">{subtitle}</p>
           </div>
 
           <button
             type="button"
             onClick={onClose}
             disabled={isBusy}
-            className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full p-2 text-slate-400 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Cerrar formulario de cupón"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -376,7 +377,7 @@ function CouponModal({ isOpen, isBusy, title, subtitle, onClose, children }) {
           </button>
         </div>
 
-        <div className="max-h-[calc(100vh-8rem)] overflow-y-auto px-5 py-5 sm:px-6">
+        <div className="custom-scroll max-h-[calc(100vh-8rem)] overflow-y-auto px-5 py-5 sm:px-6">
           {children}
         </div>
       </div>
@@ -400,7 +401,7 @@ function CouponActions({
   if (isCompanyAdmin) {
     if (isRejected) {
       slots.push(
-        <ActionButton disabled={saving} onClick={onEdit} className="w-full !bg-blue-100 !text-blue-800 hover:!bg-blue-200">
+        <ActionButton disabled={saving} onClick={onEdit} className="w-full !border-blue-400/30 !bg-blue-400/10 !text-blue-300 hover:!bg-blue-400/20">
           Revisar/Reenviar
         </ActionButton>
       );
@@ -630,8 +631,8 @@ export default function OffersModule() {
         previousState === COUPON_STATES.APPROVED &&
         cupon.state === COUPON_STATES.PENDING;
 
-      const forwardedToProcess = 
-        previousState === COUPON_STATES.REJECTED && 
+      const forwardedToProcess =
+        previousState === COUPON_STATES.REJECTED &&
         cupon.state === COUPON_STATES.PENDING;
 
       if (forwardedToProcess) {
@@ -703,7 +704,7 @@ export default function OffersModule() {
             <button
               type="button"
               onClick={openCreateModal}
-              className="inline-flex items-center justify-center rounded-full bg-cyan-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-amber-400 hover:text-black"
+              className="btn-primary"
             >
               Crear cupón
             </button>
@@ -714,25 +715,25 @@ export default function OffersModule() {
           <StatCard
             title="Pendientes"
             value={String(counts[COUPON_STATES.PENDING]).padStart(2, "0")}
-            accent="text-amber-500"
+            accent="text-amber-400"
             helper="Esperan revisión administrativa"
           />
           <StatCard
             title="Aprobadas"
             value={String(counts[COUPON_STATES.APPROVED]).padStart(2, "0")}
-            accent="text-emerald-600"
+            accent="text-emerald-400"
             helper="Ya visibles en el sitio público"
           />
           <StatCard
             title="Rechazadas"
             value={String(counts[COUPON_STATES.REJECTED]).padStart(2, "0")}
-            accent="text-rose-600"
+            accent="text-rose-400"
             helper="No se publican en catálogo"
           />
           <StatCard
             title="Eliminadas"
             value={String(counts[COUPON_STATES.ELIMINATED]).padStart(2, "0")}
-            accent="text-slate-700"
+            accent="text-slate-400"
             helper="Se conservan de forma lógica"
           />
         </div>
@@ -755,10 +756,10 @@ export default function OffersModule() {
             ))}
         </div>
 
-        <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="mt-6 overflow-hidden rounded-3xl border border-white/10">
           <div className="overflow-x-auto custom-scroll w-full">
-            <table className="w-full min-w-[700px] text-left text-sm text-slate-700">
-              <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
+            <table className="w-full min-w-[700px] text-left text-sm text-slate-300">
+              <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
                 <tr>
                   <th className="px-4 py-3">Cupón</th>
                   <th className="px-4 py-3">Categoría</th>
@@ -768,10 +769,10 @@ export default function OffersModule() {
                   <th className="w-[140px] px-4 py-3 text-center">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-white/8">
                 {loading ? (
                   <tr>
-                    <td className="px-4 py-6 text-slate-500 text-center" colSpan={isAdmin ? 5 : 6}>
+                    <td className="px-4 py-6 text-center text-slate-400" colSpan={isAdmin ? 5 : 6}>
                       Cargando cupones...
                     </td>
                   </tr>
@@ -779,15 +780,15 @@ export default function OffersModule() {
                   <tr>
                     <td colSpan={isAdmin ? 5 : 6} className="px-4 py-16 text-center">
                       <div className="flex flex-col items-center justify-center">
-                        <svg className="h-16 w-16 text-slate-200 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="h-16 w-16 text-slate-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                         </svg>
-                        <h3 className="text-lg font-medium text-slate-900">
+                        <h3 className="text-lg font-medium text-white">
                           {selectedFilter === "todos"
                             ? "Espacio de ofertas vacío"
                             : "Bandeja sin hallazgos"}
                         </h3>
-                        <p className="mt-1 text-sm text-slate-500 max-w-sm mx-auto">
+                        <p className="mt-1 text-sm text-slate-400 max-w-sm mx-auto">
                           {selectedFilter === "todos"
                             ? "Aún no has registrado ningún cupón dentro de las ofertas de negocio. Tu equipo lo puede gestionar publicando una ahora mismo."
                             : isAdmin
@@ -798,7 +799,7 @@ export default function OffersModule() {
                           <button
                             type="button"
                             onClick={openCreateModal}
-                            className="mt-5 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-full text-white bg-cyan-950 hover:bg-cyan-900 transition-colors"
+                            className="btn-primary mt-5"
                           >
                             Nueva oferta
                           </button>
@@ -815,15 +816,15 @@ export default function OffersModule() {
                             <img
                               src={coupon.image_url}
                               alt={coupon.title}
-                              className="h-14 w-20 rounded-2xl object-cover"
+                              className="h-14 w-20 rounded-2xl object-cover ring-1 ring-white/10"
                             />
                           ) : (
-                            <div className="flex h-14 w-20 items-center justify-center rounded-2xl bg-slate-100 text-[10px] font-bold text-slate-400">
+                            <div className="flex h-14 w-20 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[10px] font-bold text-slate-500">
                               Sin imagen
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="font-bold text-slate-900">{coupon.title}</p>
+                            <p className="font-bold text-white">{coupon.title}</p>
                             <p className="mt-1 text-xs font-medium text-slate-500">
                               Código: {coupon.code || "Sin código"} &bull; Stock: {coupon.stock || 0}
                             </p>
@@ -834,7 +835,7 @@ export default function OffersModule() {
                         </div>
                       </td>
                       <td className="px-4 py-4">{coupon.category}</td>
-                      <td className="px-4 py-4 font-semibold">{formatCurrency(coupon.precio)}</td>
+                      <td className="px-4 py-4 font-semibold text-amber-400">{formatCurrency(coupon.precio)}</td>
                       <td className="px-4 py-4">
                         <StateBadge state={coupon.state} />
                       </td>

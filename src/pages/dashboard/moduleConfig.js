@@ -41,6 +41,6 @@ export const DASHBOARD_MODULES = [
     id: "redeem",
     title: "Canje de cupones",
     shortLabel: "Validacion de cupones",
-    roles: [USER_ROLES.EMPLOYEE, USER_ROLES.COMPANY_ADMIN],
+    roles: [USER_ROLES.EMPLOYEE],
   },
 ];
