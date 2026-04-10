@@ -9,6 +9,8 @@ import {
   getCouponStateLabel,
   updateCupon,
   updateCuponState,
+  deleteCupon,
+  generateUniqueCouponCode,
 } from "../../../resources/CuponesService";
 import { SectionCard, StatCard } from "../../../components/dashboard/ModuleUI";
 
@@ -95,11 +97,10 @@ function FilterButton({ active, label, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-        active
+      className={`rounded-full px-4 py-2 text-sm font-semibold transition ${active
           ? "bg-cyan-950 text-white"
           : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-      }`}
+        }`}
     >
       {label}
     </button>
@@ -142,14 +143,14 @@ function CouponForm({
   return (
     <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
       <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
-        Código
+        Código (Autogenerado)
         <input
           type="text"
           name="code"
           value={form.code}
-          onChange={onInputChange}
-          placeholder="Ej. PIZZA2X1"
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-3 font-medium text-slate-900 outline-none transition focus:border-cyan-900"
+          disabled={true}
+          readOnly
+          className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-bold text-slate-500 outline-none transition disabled:cursor-not-allowed"
         />
       </label>
 
@@ -384,50 +385,70 @@ function CouponModal({ isOpen, isBusy, title, subtitle, onClose, children }) {
 }
 
 function CouponActions({
-  canCreate,
-  canApprove,
+  isCompanyAdmin,
+  isAdmin,
   saving,
   onEdit,
   onApprove,
   onReject,
   onDelete,
+  isPending,
+  isRejected
 }) {
-  const slots = [
-    canCreate ? (
-      <ActionButton disabled={saving} onClick={onEdit} className="w-full">
-        Editar
-      </ActionButton>
-    ) : null,
-    canApprove ? (
+  const slots = [];
+
+  if (isCompanyAdmin) {
+    if (isRejected) {
+      slots.push(
+        <ActionButton disabled={saving} onClick={onEdit} className="w-full !bg-blue-100 !text-blue-800 hover:!bg-blue-200">
+          Revisar/Reenviar
+        </ActionButton>
+      );
+      slots.push(
+        <ActionButton tone="danger" disabled={saving} onClick={onDelete} className="w-full">
+          Descartar
+        </ActionButton>
+      );
+    } else if (isPending) {
+      slots.push(
+        <ActionButton disabled={saving} onClick={onEdit} className="w-full">
+          Editar
+        </ActionButton>
+      );
+      slots.push(
+        <ActionButton tone="danger" disabled={saving} onClick={onDelete} className="w-full">
+          Eliminar
+        </ActionButton>
+      );
+    }
+  }
+
+  if (isAdmin && isPending) {
+    slots.push(
       <ActionButton tone="approve" disabled={saving} onClick={onApprove} className="w-full">
         Aprobar
       </ActionButton>
-    ) : null,
-    canApprove ? (
+    );
+    slots.push(
       <ActionButton tone="reject" disabled={saving} onClick={onReject} className="w-full">
         Rechazar
       </ActionButton>
-    ) : null,
-    canApprove ? (
-      <ActionButton tone="danger" disabled={saving} onClick={onDelete} className="w-full">
-        Eliminar
-      </ActionButton>
-    ) : null,
-  ];
+    );
+  }
 
   return (
-    <div className="grid w-[220px] grid-cols-2 gap-2">
+    <div className="flex flex-col gap-2 w-full max-w-[120px]">
       {slots.map((slot, index) => (
-        <div key={index} className="min-h-9">
-          {slot ?? <span aria-hidden="true" className="block h-9 w-full rounded-full" />}
+        <div key={index} className="w-full">
+          {slot}
         </div>
       ))}
     </div>
   );
 }
 
-export default function OffersModule({ canApprove, canCreate }) {
-  const { user } = useAuth();
+export default function OffersModule() {
+  const { role, user } = useAuth();
   const [coupons, setCoupons] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
@@ -438,6 +459,11 @@ export default function OffersModule({ canApprove, canCreate }) {
   const [previewUrl, setPreviewUrl] = React.useState("");
   const [fileInputKey, setFileInputKey] = React.useState(0);
   const [isFormModalOpen, setIsFormModalOpen] = React.useState(false);
+
+  // Derived authorization bounds
+  const rawRoleString = String(role || '').toUpperCase();
+  const isAdmin = rawRoleString === 'ADMIN';
+  const isCompanyAdmin = rawRoleString === 'EMPRESA_ADMIN' || rawRoleString === 'COMPANY_ADMIN';
 
   const isEditing = !!editingCoupon;
   const currentImage = editingCoupon?.image_url ?? "";
@@ -478,6 +504,12 @@ export default function OffersModule({ canApprove, canCreate }) {
     };
   }, [currentImage, imageFile]);
 
+  React.useEffect(() => {
+    if (isAdmin && (selectedFilter === "todos" || selectedFilter === COUPON_STATES.ELIMINATED)) {
+      setSelectedFilter(COUPON_STATES.PENDING);
+    }
+  }, [isAdmin, selectedFilter]);
+
   const counts = React.useMemo(() => {
     return coupons.reduce(
       (accumulator, coupon) => {
@@ -508,9 +540,13 @@ export default function OffersModule({ canApprove, canCreate }) {
     setFileInputKey((value) => value + 1);
   }
 
-  function openCreateModal() {
+  async function openCreateModal() {
     resetForm();
     setIsFormModalOpen(true);
+
+    // Auto-generate the code in advance so they see it
+    const newCode = await generateUniqueCouponCode();
+    setForm((current) => ({ ...current, code: newCode }));
   }
 
   function closeFormModal() {
@@ -547,21 +583,39 @@ export default function OffersModule({ canApprove, canCreate }) {
     const previousState = editingCoupon?.state ?? null;
     const wasEditing = !!editingCoupon;
 
+    if (wasEditing && previousState === COUPON_STATES.REJECTED) {
+      const originalValues = toFormValues(editingCoupon);
+      const hasChanges =
+        imageFile !== null ||
+        form.title !== originalValues.title ||
+        form.description !== originalValues.description ||
+        form.terms !== originalValues.terms ||
+        form.category !== originalValues.category ||
+        form.precio !== originalValues.precio ||
+        form.expires_at !== originalValues.expires_at ||
+        form.stock !== originalValues.stock;
+
+      if (!hasChanges) {
+        toast.info("Debes realizar al menos un cambio en la oferta antes de poder reenviarla a revisión.");
+        return;
+      }
+    }
+
     setSaving(true);
 
     const saveAction = wasEditing
       ? updateCupon({
-          couponId: editingCoupon.id,
-          values: form,
-          imageFile,
-          currentImage: editingCoupon.image_url,
-          userId: user?.id,
-        })
+        couponId: editingCoupon.id,
+        values: form,
+        imageFile,
+        currentImage: editingCoupon.image_url,
+        userId: user?.id,
+      })
       : createCupon({
-          values: form,
-          imageFile,
-          userId: user?.id,
-        });
+        values: form,
+        imageFile,
+        userId: user?.id,
+      });
 
     const { cupon, error } = await saveAction;
     setSaving(false);
@@ -576,11 +630,19 @@ export default function OffersModule({ canApprove, canCreate }) {
         previousState === COUPON_STATES.APPROVED &&
         cupon.state === COUPON_STATES.PENDING;
 
-      toast.success(
-        returnedToPending
-          ? "Cupón actualizado. Volvió a pendiente de aprobación."
-          : "Cupón actualizado correctamente."
-      );
+      const forwardedToProcess = 
+        previousState === COUPON_STATES.REJECTED && 
+        cupon.state === COUPON_STATES.PENDING;
+
+      if (forwardedToProcess) {
+        toast.success("Cupón corregido satisfactoriamente. Se ha reenviado para estar PENDIENTE de revisión.");
+      } else {
+        toast.success(
+          returnedToPending
+            ? "Cupón actualizado. Volvió a pendiente de aprobación."
+            : "Cupón actualizado correctamente."
+        );
+      }
     } else {
       toast.success("Cupón creado correctamente. Quedó pendiente de aprobación.");
     }
@@ -615,14 +677,29 @@ export default function OffersModule({ canApprove, canCreate }) {
     }
   }
 
+  async function handlePhysicalDelete(couponId) {
+    if (!window.confirm("¿Estás seguro de que deseas eliminar permanentemente este cupón de tu empresa?")) return;
+
+    setSaving(true);
+    const { error } = await deleteCupon(couponId);
+    setSaving(false);
+
+    if (error) {
+      toast.error(error?.message || "No logramos eliminar el cupón base.");
+    } else {
+      toast.success("Cupón eliminado permanentemente con éxito.");
+      setCoupons((curr) => curr.filter((c) => c.id !== couponId));
+    }
+  }
+
   return (
     <>
       <SectionCard
         title="Ofertas"
         subtitle="Centro de operación para crear ofertas, revisarlas por estado y publicar solo las aprobadas."
-        actionVisible={canCreate}
+        actionVisible={isCompanyAdmin}
         action={
-          canCreate ? (
+          isCompanyAdmin ? (
             <button
               type="button"
               onClick={openCreateModal}
@@ -661,40 +738,72 @@ export default function OffersModule({ canApprove, canCreate }) {
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2">
-          {FILTER_OPTIONS.map((filter) => (
-            <FilterButton
-              key={filter.value}
-              active={selectedFilter === filter.value}
-              label={filter.label}
-              onClick={() => setSelectedFilter(filter.value)}
-            />
-          ))}
+          {FILTER_OPTIONS
+            .filter(filter => {
+              if (isAdmin) {
+                return filter.value !== "todos" && filter.value !== COUPON_STATES.ELIMINATED;
+              }
+              return true;
+            })
+            .map((filter) => (
+              <FilterButton
+                key={filter.value}
+                active={selectedFilter === filter.value}
+                label={filter.label}
+                onClick={() => setSelectedFilter(filter.value)}
+              />
+            ))}
         </div>
 
         <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="min-w-[960px] w-full text-left text-sm text-slate-700">
+          <div className="overflow-x-auto custom-scroll w-full">
+            <table className="w-full min-w-[700px] text-left text-sm text-slate-700">
               <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
                 <tr>
                   <th className="px-4 py-3">Cupón</th>
                   <th className="px-4 py-3">Categoría</th>
                   <th className="px-4 py-3">Precio</th>
                   <th className="px-4 py-3">Estado</th>
-                  <th className="px-4 py-3">Vence</th>
-                  <th className="w-[248px] px-4 py-3">Acciones</th>
+                  {!isAdmin && <th className="px-4 py-3">Vence</th>}
+                  <th className="w-[140px] px-4 py-3 text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {loading ? (
                   <tr>
-                    <td className="px-4 py-6 text-slate-500" colSpan={6}>
+                    <td className="px-4 py-6 text-slate-500 text-center" colSpan={isAdmin ? 5 : 6}>
                       Cargando cupones...
                     </td>
                   </tr>
                 ) : filteredCoupons.length === 0 ? (
                   <tr>
-                    <td className="px-4 py-6 text-slate-500" colSpan={6}>
-                      No hay cupones para el filtro seleccionado.
+                    <td colSpan={isAdmin ? 5 : 6} className="px-4 py-16 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <svg className="h-16 w-16 text-slate-200 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        <h3 className="text-lg font-medium text-slate-900">
+                          {selectedFilter === "todos"
+                            ? "Espacio de ofertas vacío"
+                            : "Bandeja sin hallazgos"}
+                        </h3>
+                        <p className="mt-1 text-sm text-slate-500 max-w-sm mx-auto">
+                          {selectedFilter === "todos"
+                            ? "Aún no has registrado ningún cupón dentro de las ofertas de negocio. Tu equipo lo puede gestionar publicando una ahora mismo."
+                            : isAdmin
+                              ? "No hay cupones correspondientes al estado seleccionado esperando por tu gestión y supervisión."
+                              : "No hay ofertas filtradas en el estado que solicitaste en este momento."}
+                        </p>
+                        {isCompanyAdmin && selectedFilter === "todos" && (
+                          <button
+                            type="button"
+                            onClick={openCreateModal}
+                            className="mt-5 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-full text-white bg-cyan-950 hover:bg-cyan-900 transition-colors"
+                          >
+                            Nueva oferta
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ) : (
@@ -729,13 +838,17 @@ export default function OffersModule({ canApprove, canCreate }) {
                       <td className="px-4 py-4">
                         <StateBadge state={coupon.state} />
                       </td>
-                      <td className="px-4 py-4 text-xs text-slate-500">
-                        {formatDateTime(coupon.expires_at)}
-                      </td>
-                      <td className="w-[248px] px-4 py-4">
+                      {!isAdmin && (
+                        <td className="px-4 py-4 text-xs text-slate-500">
+                          {formatDateTime(coupon.expires_at)}
+                        </td>
+                      )}
+                      <td className="w-[140px] px-4 py-4">
                         <CouponActions
-                          canCreate={canCreate}
-                          canApprove={canApprove}
+                          isCompanyAdmin={isCompanyAdmin}
+                          isAdmin={isAdmin}
+                          isPending={coupon.state === COUPON_STATES.PENDING}
+                          isRejected={coupon.state === COUPON_STATES.REJECTED}
                           saving={saving}
                           onEdit={() => handleEdit(coupon)}
                           onApprove={() =>
@@ -749,16 +862,10 @@ export default function OffersModule({ canApprove, canCreate }) {
                             handleStateChange(
                               coupon,
                               COUPON_STATES.REJECTED,
-                              "Cupón rechazado correctamente."
+                              "Cupón rechazado correctamente y revertido a su empresa."
                             )
                           }
-                          onDelete={() =>
-                            handleStateChange(
-                              coupon,
-                              COUPON_STATES.ELIMINATED,
-                              "Cupón marcado como eliminado."
-                            )
-                          }
+                          onDelete={() => handlePhysicalDelete(coupon.id)}
                         />
                       </td>
                     </tr>

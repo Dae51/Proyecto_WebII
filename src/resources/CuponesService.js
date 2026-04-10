@@ -149,18 +149,18 @@ export function normalizeCouponCategory(value) {
 function normalizeCupon(row) {
   const rawRegular = toNumber(
     row.regular_price ??
-      row.precio_regular ??
-      row.precio_normal ??
-      row.price ??
-      row.precio
+    row.precio_regular ??
+    row.precio_normal ??
+    row.price ??
+    row.precio
   );
 
   const rawOffer = toNumber(
     row.offer_price ??
-      row.precio_oferta ??
-      row.precio_descuento ??
-      row.discount_price ??
-      row.precio_final
+    row.precio_oferta ??
+    row.precio_descuento ??
+    row.discount_price ??
+    row.precio_final
   );
 
   const { regular_price, offer_price } = normalizePrices({
@@ -181,11 +181,11 @@ function normalizeCupon(row) {
 
   const category = normalizeCouponCategory(
     row.category ??
-      row.tipo ??
-      row.rubro ??
-      row.categoria ??
-      row.tipo_cupon ??
-      row.tipo_oferta
+    row.tipo ??
+    row.rubro ??
+    row.categoria ??
+    row.tipo_cupon ??
+    row.tipo_oferta
   );
 
   const state = normalizeCouponState(row.state ?? row.status ?? row.estado);
@@ -354,6 +354,51 @@ function toCouponPayload({ values, imageUrl }) {
   };
 }
 
+// Authentication & Role Helper
+export async function getUserContext() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const rawRole = user?.app_metadata?.role || user?.user_metadata?.role;
+  const role = String(rawRole || '').toUpperCase();
+
+  // Validate EMPRESA_ADMIN (company administrative scope)
+  if (role === 'EMPRESA_ADMIN' || role === 'COMPANY_ADMIN') {
+    const { data: empleado } = await supabase
+      .from('empleados')
+      .select('empresa')
+      .eq('uuid', user.id)
+      .maybeSingle();
+
+    return { user, role: 'EMPRESA_ADMIN', empresaId: empleado?.empresa || null };
+  }
+
+  return { user, role: role === 'ADMIN' ? 'ADMIN' : role, empresaId: null };
+}
+
+export async function generateUniqueCouponCode() {
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const numbers = "0123456789";
+
+  let randomCode = "";
+  for (let i = 0; i < 3; i++) {
+    randomCode += letters.charAt(Math.floor(Math.random() * letters.length));
+  }
+  for (let i = 0; i < 3; i++) {
+    randomCode += numbers.charAt(Math.floor(Math.random() * numbers.length));
+  }
+
+  const { data } = await supabase
+    .from("cupones")
+    .select("code")
+    .eq("code", randomCode)
+    .maybeSingle();
+
+  if (data) return generateUniqueCouponCode();
+
+  return randomCode;
+}
+
 async function saveCouponWithImage({
   couponId = null,
   values,
@@ -362,6 +407,18 @@ async function saveCouponWithImage({
   userId,
 }) {
   try {
+    const ctx = await getUserContext();
+    if (ctx?.role !== 'EMPRESA_ADMIN') {
+      return { cupon: null, error: buildServiceError(null, "Sólo los administradores de empresa pueden editar o crear cupones.", 403) };
+    }
+    if (!ctx.empresaId) {
+      return { cupon: null, error: buildServiceError(null, "Acción denegada: Tu cuenta aún no ha sido vinculada formalmente a ninguna empresa. Contacta a un administrador para que te asigne a una sucursal.", 403) };
+    }
+
+    if (!couponId && !normalizeText(values?.code)) {
+      values.code = await generateUniqueCouponCode();
+    }
+
     const validationError = validateCouponPayload(values);
     if (validationError) {
       return {
@@ -384,10 +441,28 @@ async function saveCouponWithImage({
     }
 
     const payload = toCouponPayload({ values, imageUrl });
+    let query;
 
-    const query = couponId
-      ? supabase.from("cupones").update(payload).eq("id", couponId)
-      : supabase.from("cupones").insert(payload);
+    if (couponId) {
+      // Obtener el estado real actual de la BD para la validacion
+      const { data: currentDb } = await supabase.from('cupones').select('state').eq('id', couponId).maybeSingle();
+
+      if (currentDb && currentDb.state === COUPON_STATES.REJECTED) {
+        payload.state = COUPON_STATES.PENDING;
+      }
+
+      // UPDATE: Solo de tu propia empresa
+      query = supabase
+        .from("cupones")
+        .update(payload)
+        .eq("id", couponId)
+        .eq("empresa", ctx.empresaId);
+    } else {
+      // CREATE: Fuerza la vinculación e inicia pendiente
+      payload.empresa = ctx.empresaId;
+      payload.state = COUPON_STATES.PENDING;
+      query = supabase.from("cupones").insert(payload);
+    }
 
     const { data, error } = await query.select("*").maybeSingle();
 
@@ -401,7 +476,7 @@ async function saveCouponWithImage({
         error: buildServiceError(
           error,
           couponId
-            ? "No se pudo actualizar el cupón."
+            ? "No se pudo actualizar el cupón. Tal vez no posees acceso a este registro."
             : "No se pudo crear el cupón."
         ),
       };
@@ -499,10 +574,22 @@ export async function getCuponPublicoById(couponId) {
 
 export async function getAdminCupones() {
   try {
-    const { data, error } = await supabase
-      .from("cupones")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const ctx = await getUserContext();
+    if (!ctx) return { cupones: [], error: buildServiceError(null, "No autenticado", 401) };
+
+    let query = supabase.from("cupones").select("*").order("created_at", { ascending: false });
+
+    if (ctx.role === "EMPRESA_ADMIN") {
+      if (!ctx.empresaId) {
+        // En vez de retornar error y disparar un toast rojo de carga en OffersModule,
+        // retornamos la bandeja vacía para que corra el "Visual Empty State".
+        return { cupones: [], error: null };
+      }
+      query = query.eq("empresa", ctx.empresaId);
+    }
+    // Si rol === 'ADMIN', la consulta corre limpia y traerá todo
+
+    const { data, error } = await query;
 
     if (error) {
       return { cupones: [], error };
@@ -550,6 +637,14 @@ export async function updateCupon({ couponId, values, imageFile, currentImage, u
 export async function updateCuponState(couponId, nextState) {
   const normalizedState = normalizeCouponState(nextState);
 
+  const ctx = await getUserContext();
+  if (ctx?.role !== 'ADMIN') {
+    return {
+      cupon: null,
+      error: buildServiceError(null, "Acción denegada: Sólo un Administrador Principal puede aprobar o rechazar cupones.", 403)
+    };
+  }
+
   if (!couponId) {
     return {
       cupon: null,
@@ -561,6 +656,16 @@ export async function updateCuponState(couponId, nextState) {
     };
   }
 
+  const { data: currentTarget } = await supabase.from('cupones').select('state').eq('id', couponId).maybeSingle();
+  if (!currentTarget) {
+    return { cupon: null, error: buildServiceError(null, "Cupón no encontrado en el sistema base.") };
+  }
+
+  const stateC = normalizeCouponState(currentTarget.state);
+  if (stateC !== COUPON_STATES.PENDING) {
+    return { cupon: null, error: buildServiceError(null, "Solo se pueden aprobar o rechazar cupones atascados en estado PENDIENTE.") };
+  }
+
   try {
     const { data, error } = await supabase
       .from("cupones")
@@ -569,21 +674,10 @@ export async function updateCuponState(couponId, nextState) {
       .select("*")
       .maybeSingle();
 
-    if (error) {
+    if (error || !data) {
       return {
         cupon: null,
-        error: buildServiceError(error, "No se pudo actualizar el estado del cupón."),
-      };
-    }
-
-    if (!data) {
-      return {
-        cupon: null,
-        error: buildServiceError(
-          { message: "Cupón no encontrado." },
-          "Cupón no encontrado.",
-          404
-        ),
+        error: buildServiceError(error || {}, "No se pudo actualizar el estado del cupón."),
       };
     }
 
@@ -596,6 +690,30 @@ export async function updateCuponState(couponId, nextState) {
       cupon: null,
       error: buildServiceError(error, "No se pudo actualizar el estado del cupón."),
     };
+  }
+}
+
+export async function deleteCupon(couponId) {
+  const ctx = await getUserContext();
+
+  if (ctx?.role !== "EMPRESA_ADMIN") {
+    return { error: buildServiceError(null, "Acción denegada: Sólo una empresa propietaria puede eliminar su oferta física.", 403) };
+  }
+  if (!ctx.empresaId) {
+    return { error: buildServiceError(null, "Usuario empresa sin ID asociado.", 403) };
+  }
+
+  try {
+    const { error } = await supabase
+      .from("cupones")
+      .delete()
+      .eq("id", couponId)
+      .eq("empresa", ctx.empresaId);
+
+    if (error) return { error: buildServiceError(error, "Fallo al ejecutar query DELETE base.") };
+    return { error: null };
+  } catch (err) {
+    return { error: buildServiceError(err, "Hubo un error del sistema interno.") };
   }
 }
 

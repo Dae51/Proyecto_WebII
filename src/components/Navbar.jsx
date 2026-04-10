@@ -9,12 +9,9 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
-  const { isAuthenticated, role, roleLabel, session, user } = useAuth();
-  const userMetadata = user?.user_metadata ?? {};
+  const { isAuthenticated, role, roleLabel, session, user, cliente } = useAuth();
   const userDisplayName =
-    [userMetadata.first_name, userMetadata.last_name].filter(Boolean).join(" ").trim() ||
-    userMetadata.full_name ||
-    userMetadata.name ||
+    [cliente?.name, cliente?.last_name].filter(Boolean).join(" ").trim() ||
     user?.email ||
     "Usuario";
 

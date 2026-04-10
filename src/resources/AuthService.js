@@ -88,17 +88,27 @@ export async function registerWithPassword({
       password,
       options: {
         data: {
-          first_name: firstName,
-          last_name: lastNameValue,
-          full_name: [firstName, lastNameValue].filter(Boolean).join(" ").trim(),
-          address: addressValue,
-          phone: phoneValue,
-          dui: duiValue,
           role: normalizeRole(role),
         },
         emailRedirectTo,
       },
     });
+
+    if (data && data.user) {
+      const { error: insertError } = await supabase.from('clientes').insert({
+        uuid: data.user.id,
+        name: firstName,
+        last_name: lastNameValue,
+        address: addressValue,
+        phone: phoneValue,
+        mail: normalizedEmail,
+        DUI: duiValue
+      });
+
+      if (insertError) {
+        console.error("Error al registrar el registro en tabla clientes:", insertError);
+      }
+    }
 
     return {
       data: {
