@@ -11,19 +11,27 @@ export default function CategoriesModule({ canManage }) {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [editingId, setEditingId] = useState(null);
 
-  const loadCategorias = async () => {
-    setLoading(true);
-    const { data, error } = await fetchCategorias();
-    if (error) {
-      toast.error("Error al cargar rubros: " + error.message);
-    } else {
-      setCategorias(data || []);
-    }
-    setLoading(false);
-  };
-
   useEffect(() => {
-    loadCategorias();
+    let mounted = true;
+
+    const run = async () => {
+      const { data, error } = await fetchCategorias();
+      if (!mounted) return;
+
+      if (error) {
+        toast.error("Error al cargar rubros: " + error.message);
+      } else {
+        setCategorias(data || []);
+      }
+
+      setLoading(false);
+    };
+
+    run();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const handleSubmit = async (e) => {

@@ -1,365 +1,510 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { DataTable, SectionCard, StatCard } from "../../../components/dashboard/ModuleUI";
 import { fetchCategorias } from "../../../resources/CategoryService";
 import {
-  fetchEmpresas,
-  createEmpresa,
-  updateEmpresa,
-  deleteEmpresa,
-  generateUniqueEmpresaCode
+  fetchManagedEmpresa,
+  generateUniqueEmpresaCode,
+  saveManagedEmpresa,
 } from "../../../resources/EmpresasService";
 
-// Helper Component: Simple Modal
-const Modal = ({ isOpen, title, onClose, onSubmit, children, isSubmitting }) => {
+const EMPTY_FORM = {
+  name: "",
+  code: "",
+  address: "",
+  contact_name: "",
+  phone: "",
+  mail: "",
+  category: "",
+};
+
+const CODE_PATTERN = /^[A-Z]{3}[0-9]{3}$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_PATTERN = /^[0-9]{4}-[0-9]{4}$/;
+
+function getCategoryLabel(category) {
+  return category?.categories ?? category?.name ?? category?.nombre ?? `Categoría ${category?.id ?? ""}`;
+}
+
+function getCategoryOptionValue(category) {
+  const nameValue = getCategoryLabel(category);
+  return String(nameValue || category?.id || "");
+}
+
+function resolveCategoryValue(rawValue, categories) {
+  const value = String(rawValue ?? "").trim();
+  if (!value) return "";
+
+  const match = categories.find((category) => {
+    const categoryLabel = getCategoryLabel(category);
+    return (
+      String(category?.id) === value ||
+      getCategoryOptionValue(category) === value ||
+      categoryLabel.toLowerCase() === value.toLowerCase()
+    );
+  });
+
+  return match ? getCategoryOptionValue(match) : value;
+}
+
+function formatDate(value) {
+  if (!value) return "Sin fecha";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sin fecha";
+
+  return new Intl.DateTimeFormat("es-SV", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function EmpresaModal({
+  isOpen,
+  title,
+  formData,
+  errors,
+  categories,
+  isSubmitting,
+  isPreparingCode,
+  onClose,
+  onSubmit,
+  onFieldChange,
+  onPhoneChange,
+}) {
   if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur-sm">
-      <div className="custom-scroll relative w-full max-w-xl overflow-y-auto rounded-[28px] border border-white/10 bg-[#07142f] p-6 shadow-2xl max-h-[90vh] md:p-8">
-        <h3 className="mb-6 text-2xl font-black text-white">{title}</h3>
-        <form onSubmit={onSubmit} className="flex flex-col gap-4">
-          {children}
-          <div className="mt-8 flex justify-end gap-3 border-t border-white/10 pt-6">
+      <div className="custom-scroll relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[28px] border border-white/10 bg-[#07142f] p-6 shadow-2xl md:p-8">
+        <div className="mb-6">
+          <h3 className="text-2xl font-black text-white">{title}</h3>
+          <p className="mt-2 text-sm text-slate-400">
+            Esta información identifica a tu negocio dentro del panel y de los cupones publicados.
+          </p>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-5">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label className="bo-label">Nombre de la empresa</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(event) => onFieldChange("name", event.target.value)}
+                placeholder="Ej. Café Central S.A. de C.V."
+                className={errors.name ? "bo-input-error" : "bo-input"}
+                disabled={isSubmitting}
+              />
+              {errors.name ? <span className="text-xs font-semibold text-rose-400">{errors.name}</span> : null}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="bo-label">Código</label>
+              <input
+                type="text"
+                value={isPreparingCode ? "Generando..." : formData.code}
+                readOnly
+                className={`bo-input cursor-not-allowed font-mono tracking-[0.25em] opacity-60 ${isPreparingCode ? "animate-pulse" : ""}`}
+              />
+              {errors.code ? <span className="text-xs font-semibold text-rose-400">{errors.code}</span> : null}
+              <span className="text-xs font-semibold text-slate-500">
+                Se genera automáticamente con el patrón AAA000.
+              </span>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label className="bo-label">Correo electrónico</label>
+              <input
+                type="email"
+                value={formData.mail}
+                onChange={(event) => onFieldChange("mail", event.target.value)}
+                placeholder="contacto@empresa.com"
+                className={errors.mail ? "bo-input-error" : "bo-input"}
+                disabled={isSubmitting}
+              />
+              {errors.mail ? <span className="text-xs font-semibold text-rose-400">{errors.mail}</span> : null}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="bo-label">Teléfono</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={formData.phone}
+                onChange={onPhoneChange}
+                placeholder="####-####"
+                className={errors.phone ? "bo-input-error font-mono" : "bo-input font-mono"}
+                disabled={isSubmitting}
+              />
+              {errors.phone ? <span className="text-xs font-semibold text-rose-400">{errors.phone}</span> : null}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="bo-label">Dirección</label>
+            <input
+              type="text"
+              value={formData.address}
+              onChange={(event) => onFieldChange("address", event.target.value)}
+              placeholder="Ej. Calle El Mirador, local 12"
+              className={errors.address ? "bo-input-error" : "bo-input"}
+              disabled={isSubmitting}
+            />
+            {errors.address ? <span className="text-xs font-semibold text-rose-400">{errors.address}</span> : null}
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label className="bo-label">Encargado principal</label>
+              <input
+                type="text"
+                value={formData.contact_name}
+                onChange={(event) => onFieldChange("contact_name", event.target.value)}
+                placeholder="Ej. Ana Martínez"
+                className={errors.contact_name ? "bo-input-error" : "bo-input"}
+                disabled={isSubmitting}
+              />
+              {errors.contact_name ? (
+                <span className="text-xs font-semibold text-rose-400">{errors.contact_name}</span>
+              ) : null}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="bo-label">Categoría</label>
+              <select
+                value={formData.category}
+                onChange={(event) => onFieldChange("category", event.target.value)}
+                className={errors.category ? "bo-input-error" : "bo-input"}
+                disabled={isSubmitting || categories.length === 0}
+              >
+                <option value="" className="bg-[#07142f] text-slate-300">
+                  Selecciona una categoría
+                </option>
+                {categories.map((category) => (
+                  <option
+                    key={category.id ?? getCategoryOptionValue(category)}
+                    value={getCategoryOptionValue(category)}
+                    className="bg-[#07142f] text-white"
+                  >
+                    {getCategoryLabel(category)}
+                  </option>
+                ))}
+              </select>
+              {errors.category ? <span className="text-xs font-semibold text-rose-400">{errors.category}</span> : null}
+              {categories.length === 0 ? (
+                <span className="text-xs font-semibold text-amber-300">
+                  Aún no hay categorías registradas para asignar a tu empresa.
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 border-t border-white/10 pt-6">
             <button
               type="button"
               onClick={onClose}
               className="btn-secondary"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isPreparingCode}
             >
               Cancelar
             </button>
             <button
               type="submit"
               className="btn-primary"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isPreparingCode}
             >
-              {isSubmitting ? "Guardando..." : "Guardar"}
+              {isSubmitting ? "Guardando..." : "Guardar cambios"}
             </button>
           </div>
         </form>
       </div>
     </div>
   );
-};
+}
 
 export default function CompaniesModule({ canManage }) {
-  const [empresas, setEmpresas] = useState([]);
+  const [empresa, setEmpresa] = useState(null);
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [canCreate, setCanCreate] = useState(false);
 
-  // Modal State
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPreparingCode, setIsPreparingCode] = useState(false);
 
-  const initialForm = {
-    name: "",
-    code: "",
-    address: "",
-    contact_name: "",
-    phone: "",
-    mail: "",
-    category: ""
-  };
-  const [formData, setFormData] = useState(initialForm);
+  const loadModuleData = React.useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+
+    const [empresaResult, categoriasResult] = await Promise.all([
+      fetchManagedEmpresa(),
+      fetchCategorias(),
+    ]);
+
+    if (categoriasResult.error) {
+      toast.error(`No se pudieron cargar las categorías: ${categoriasResult.error.message}`);
+      setCategorias([]);
+    } else {
+      setCategorias(categoriasResult.data ?? []);
+    }
+
+    if (empresaResult.error) {
+      setEmpresa(null);
+      setCanCreate(Boolean(empresaResult.canCreate));
+      setLoadError(empresaResult.error.message);
+    } else {
+      setEmpresa(empresaResult.data ?? null);
+      setCanCreate(Boolean(empresaResult.canCreate));
+    }
+
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    let mounted = true;
-    const loadData = async () => {
-      setLoading(true);
-      const [resEmpresas, resCategorias] = await Promise.all([
-        fetchEmpresas(),
-        fetchCategorias()
-      ]);
+    loadModuleData();
+  }, [loadModuleData]);
 
-      if (!mounted) return;
-      if (resEmpresas.error) toast.error("Error al cargar empresas.");
-      else setEmpresas(resEmpresas.data || []);
+  const handleFieldChange = (field, value) => {
+    setFormData((previous) => ({ ...previous, [field]: value }));
 
-      if (resCategorias.error) toast.error("Error al cargar categorías.");
-      else setCategorias(resCategorias.data || []);
-      setLoading(false);
-    };
-    loadData();
-    return () => { mounted = false; };
-  }, []);
+    if (errors[field]) {
+      setErrors((previous) => ({ ...previous, [field]: "" }));
+    }
+  };
+
+  const handlePhoneChange = (event) => {
+    let value = event.target.value.replace(/\D/g, "");
+    if (value.length > 8) value = value.slice(0, 8);
+    if (value.length > 4) value = `${value.slice(0, 4)}-${value.slice(4)}`;
+    handleFieldChange("phone", value);
+  };
 
   const openCreateModal = async () => {
     setErrors({});
-    setFormData(initialForm);
-    setEditingId(null);
+    setFormData(EMPTY_FORM);
     setModalOpen(true);
-    // Pre-generate code uniquely
+    setIsPreparingCode(true);
+
     try {
       const code = await generateUniqueEmpresaCode();
-      setFormData((prev) => ({ ...prev, code }));
-    } catch {
-      toast.error("Error contactando al servidor para asignar la llave.");
+      setFormData((previous) => ({ ...previous, code }));
+    } catch (error) {
+      toast.error(`No se pudo generar el código de empresa: ${error.message}`);
+    } finally {
+      setIsPreparingCode(false);
     }
   };
 
-  const openEditModal = (empresa) => {
+  const openEditModal = () => {
+    if (!empresa) return;
+
     setErrors({});
     setFormData({
-      name: empresa.name || "",
-      code: empresa.code || "",
-      address: empresa.address || "",
-      contact_name: empresa.contact_name || "",
-      phone: empresa.phone || "",
-      mail: empresa.mail || "",
-      category: empresa.category || ""
+      name: empresa.name ?? "",
+      code: empresa.code ?? "",
+      address: empresa.address ?? "",
+      contact_name: empresa.contact_name ?? "",
+      phone: empresa.phone ?? "",
+      mail: empresa.mail ?? "",
+      category: resolveCategoryValue(empresa.category, categorias),
     });
-    setEditingId(empresa.id);
     setModalOpen(true);
   };
 
-  const handlePhoneChange = (e) => {
-    let val = e.target.value.replace(/\D/g, "");
-    if (val.length > 8) val = val.slice(0, 8);
-    if (val.length > 4) val = val.slice(0, 4) + "-" + val.slice(4);
-    handleChange("phone", val);
-  };
-
-  const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: null }));
-    }
+  const closeModal = () => {
+    if (isSubmitting || isPreparingCode) return;
+    setModalOpen(false);
   };
 
   const validateForm = () => {
-    let currErrors = {};
-    if (!formData.name?.trim()) currErrors.name = "El nombre de la empresa es obligatorio";
-    if (!formData.address?.trim()) currErrors.address = "Debes proveer una dirección";
-    if (!formData.contact_name?.trim()) currErrors.contact_name = "El encargado/contacto es requerido";
+    const nextErrors = {};
 
-    // Mail Regex Check
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.mail?.trim() || !emailRegex.test(formData.mail)) {
-      currErrors.mail = "Ingresa un correo electrónico corporativo válido";
+    if (!formData.name.trim()) {
+      nextErrors.name = "El nombre de la empresa es obligatorio.";
     }
 
-    // Phone Regex (Salvadoran minimal check: exact 9 chars e.g. 1234-5678)
-    const phoneRegex = /^[0-9]{4}-[0-9]{4}$/;
-    if (!formData.phone || !phoneRegex.test(formData.phone)) {
-      currErrors.phone = "Agrega un número válido en formato ####-####";
+    if (!CODE_PATTERN.test(formData.code.trim())) {
+      nextErrors.code = "El código debe tener el formato AAA000.";
     }
 
-    if (!formData.category) currErrors.category = "Selecciona un rubro obligatorio";
+    if (!formData.address.trim()) {
+      nextErrors.address = "La dirección es obligatoria.";
+    }
 
-    setErrors(currErrors);
-    return Object.keys(currErrors).length === 0;
+    if (!formData.contact_name.trim()) {
+      nextErrors.contact_name = "Debes indicar el nombre del encargado.";
+    }
+
+    if (!EMAIL_PATTERN.test(formData.mail.trim())) {
+      nextErrors.mail = "Ingresa un correo electrónico válido.";
+    }
+
+    if (!PHONE_PATTERN.test(formData.phone.trim())) {
+      nextErrors.phone = "El teléfono debe tener el formato ####-####.";
+    }
+
+    if (!formData.category.trim()) {
+      nextErrors.category = "Selecciona una categoría.";
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-    if (editingId) {
-      const { data, error } = await updateEmpresa(editingId, formData);
-      if (error) toast.error("Error al actualizar la empresa: " + error.message);
-      else {
-        toast.success("Empresa actualizada.");
-        setEmpresas(empresas.map(emp => emp.id === editingId ? data : emp));
-        setModalOpen(false);
-      }
-    } else {
-      const { data, error } = await createEmpresa(formData);
-      if (error) toast.error("Hubo un fallo en la inserción: " + error.message);
-      else {
-        toast.success("Empresa registrada correctamente en sucursal.");
-        setEmpresas([data, ...empresas]);
-        setModalOpen(false);
-      }
+
+    const { error, mode } = await saveManagedEmpresa(formData);
+
+    if (error) {
+      toast.error(error.message);
+      setIsSubmitting(false);
+      return;
     }
+
+    toast.success(mode === "create" ? "Tu empresa fue registrada correctamente." : "La empresa se actualizó correctamente.");
+    setModalOpen(false);
     setIsSubmitting(false);
+    await loadModuleData();
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("¿Seguro que deseas dar de baja este registro global permanentemente?")) return;
-    const { error } = await deleteEmpresa(id);
-    if (error) toast.error("Error de borrado: " + error.message);
-    else {
-      toast.success("Registro empresarial eliminado exítosamente.");
-      setEmpresas(empresas.filter(e => e.id !== id));
-    }
-  };
+  const actionLabel = empresa ? "Editar mi empresa" : "Registrar mi empresa";
+  const actionDisabled = loading || isSubmitting || isPreparingCode || categorias.length === 0 || Boolean(loadError);
 
-  const getCategoryName = (identifier) => {
-    const catObj = categorias.find(c => String(c.id) === String(identifier) || c.categories === identifier);
-    return catObj ? catObj.categories : identifier || "Sin rubro";
-  };
-
-  const rows = empresas.map(emp => [
-    <div className="flex flex-col">
-      <span className="font-bold text-white">{emp.name}</span>
-      <span className="text-xs text-slate-400">{emp.mail}</span>
-    </div>,
-    <span className="font-mono text-xs font-semibold rounded-md border border-amber-400/20 bg-amber-400/10 px-2 py-1 tracking-widest text-amber-300">{emp.code}</span>,
-    <div className="flex flex-col">
-      <span className="text-slate-300">{emp.contact_name}</span>
-      <span className="text-xs text-slate-500">{emp.phone}</span>
-    </div>,
-    getCategoryName(emp.category),
-    canManage ? (
-      <div className="flex gap-3">
+  const rows = empresa
+    ? [[
+        <div className="flex flex-col">
+          <span className="font-bold text-white">{empresa.name}</span>
+          <span className="text-xs text-slate-400">{empresa.address || "Sin dirección registrada"}</span>
+        </div>,
+        <span className="rounded-md border border-amber-400/20 bg-amber-400/10 px-2 py-1 font-mono text-xs font-semibold tracking-widest text-amber-300">
+          {empresa.code}
+        </span>,
+        <div className="flex flex-col">
+          <span className="text-slate-200">{empresa.contact_name}</span>
+          <span className="text-xs text-slate-500">{empresa.mail}</span>
+        </div>,
+        <div className="flex flex-col">
+          <span className="text-slate-200">{resolveCategoryValue(empresa.category, categorias) || "Sin categoría"}</span>
+          <span className="text-xs text-slate-500">{empresa.phone || "Sin teléfono"}</span>
+        </div>,
         <button
-          onClick={() => openEditModal(emp)}
-          className="text-xs font-bold text-cyan-400 transition hover:text-cyan-300"
+          type="button"
+          onClick={openEditModal}
+          className="text-left text-xs font-bold text-cyan-400 transition hover:text-cyan-300"
         >
           Editar
-        </button>
-        <button
-          onClick={() => handleDelete(emp.id)}
-          className="text-xs font-bold text-rose-400 transition hover:text-rose-300"
-        >
-          Borrar
-        </button>
-      </div>
-    ) : (
-      <span className="text-xs italic text-slate-500">Sólo vista</span>
-    )
-  ]);
+        </button>,
+      ]]
+    : [];
+
+  if (!canManage) {
+    return (
+      <SectionCard title="Mi empresa" subtitle="Este módulo es exclusivo para administradores de empresa.">
+        <div className="rounded-3xl border border-rose-400/20 bg-rose-400/10 px-4 py-6 text-sm font-medium text-rose-200">
+          No tienes permisos para gestionar la información comercial de una empresa.
+        </div>
+      </SectionCard>
+    );
+  }
 
   return (
     <>
       <SectionCard
-        title="Empresas Asociadas"
-        subtitle="Directorio maestro para registrar las marcas y sus encargados para ofertar en el portal."
-        actionVisible={canManage}
+        title="Mi empresa"
+        subtitle="Administra la ficha comercial de tu negocio. Esta información se usa para identificar y operar tus cupones."
+        actionVisible={Boolean(empresa) || canCreate}
         action={
           <button
-            onClick={openCreateModal}
-            className="btn-primary hover:-translate-y-1"
+            type="button"
+            onClick={empresa ? openEditModal : openCreateModal}
+            className="btn-primary"
+            disabled={actionDisabled}
           >
-            Añadir Empresa
+            {actionLabel}
           </button>
         }
       >
         <div className="grid gap-4 md:grid-cols-3">
-          <StatCard title="Empresas registradas" value={loading ? "-" : String(empresas.length).padStart(2, '0')} accent="text-cyan-400" />
-          <StatCard title="Categorías base" value={loading ? "-" : String(categorias.length).padStart(2, '0')} accent="text-emerald-400" />
-          <StatCard title="Estado Central" value="Seguro" accent="text-amber-400" />
+          <StatCard
+            title="Empresa vinculada"
+            value={loading ? "-" : empresa ? "Sí" : "No"}
+            accent={empresa ? "text-emerald-400" : "text-amber-300"}
+            helper={empresa ? "Tu cuenta ya está asociada a una empresa." : "Aún no hay empresa registrada para tu cuenta."}
+          />
+          <StatCard
+            title="Código actual"
+            value={loading ? "-" : empresa?.code ?? "Pendiente"}
+            accent="text-cyan-400"
+            helper="El código se asigna automáticamente y es de solo lectura."
+          />
+          <StatCard
+            title="Fecha de registro"
+            value={loading ? "-" : formatDate(empresa?.created_at)}
+            accent="text-amber-300"
+            helper="Referencia visible para validar el registro de tu negocio."
+          />
         </div>
 
         <div className="mt-8">
           {loading ? (
-            <div className="animate-pulse py-12 text-center text-sm font-medium text-slate-500">Obteniendo listado empresarial...</div>
-          ) : empresas.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-white/10 py-12 text-center text-sm font-medium text-slate-400">El tablero está vacío. Agrega tu primera compañía ofertante para arrancar.</div>
-          ) : (
+            <div className="py-12 text-center text-sm font-medium text-slate-500">
+              Cargando la información de tu empresa...
+            </div>
+          ) : loadError ? (
+            <div className="rounded-3xl border border-rose-400/20 bg-rose-400/10 px-4 py-6 text-sm font-medium text-rose-200">
+              {loadError}
+            </div>
+          ) : empresa ? (
             <DataTable
-              columns={["Empresa Comercial", "Código Asignado", "Punto de Contacto", "Rubro / Categoría", "Acciones Administrativas"]}
+              columns={["Empresa", "Código", "Contacto", "Categoría", "Acción"]}
               rows={rows}
             />
+          ) : canCreate ? (
+            <div className="rounded-3xl border border-dashed border-white/10 px-4 py-10 text-center">
+              <p className="text-sm font-semibold text-white">
+                Todavía no hay una empresa registrada para tu cuenta.
+              </p>
+              <p className="mt-2 text-sm text-slate-400">
+                Completa el formulario para crear la ficha comercial de tu negocio y usarla en la gestión de cupones.
+              </p>
+              {categorias.length === 0 ? (
+                <p className="mt-4 text-sm font-semibold text-amber-300">
+                  No puedes continuar hasta que exista al menos una categoría disponible.
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <div className="rounded-3xl border border-white/10 bg-white/5 px-4 py-10 text-center text-sm text-slate-400">
+              Tu cuenta todavía no puede registrar una empresa desde este módulo.
+            </div>
           )}
         </div>
       </SectionCard>
 
-      <Modal
+      <EmpresaModal
         isOpen={modalOpen}
-        title={editingId ? "Editar Registro de Empresa" : "Vincular a la Tienda (Nueva Empresa)"}
-        onClose={() => !isSubmitting && setModalOpen(false)}
-        onSubmit={handleSubmit}
+        title={empresa ? "Editar Empresa" : "Nueva Empresa"}
+        formData={formData}
+        errors={errors}
+        categories={categorias}
         isSubmitting={isSubmitting}
-      >
-        {/* Row 1 */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <label className="bo-label">Nombre de la Empresa</label>
-            <input
-              type="text"
-              placeholder="Ej: InnovaCorp S.A."
-              value={formData.name}
-              onChange={(e) => handleChange("name", e.target.value)}
-              className={errors.name ? "bo-input-error" : "bo-input"}
-            />
-            {errors.name && <span className="text-xs font-semibold text-rose-400">{errors.name}</span>}
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="bo-label">Código de Referencia (Auto)</label>
-            <input
-              type="text"
-              readOnly
-              value={formData.code}
-              className="bo-input cursor-not-allowed font-mono tracking-[0.25em] opacity-60"
-            />
-            <span className="text-xs font-semibold text-slate-500">Sólo lectura (generado por hash)</span>
-          </div>
-        </div>
-
-        {/* Row 2 */}
-        <div className="flex flex-col gap-1.5">
-          <label className="bo-label">Correo Electrónico (Representante o Facturación)</label>
-          <input
-            type="email"
-            placeholder="facturacion@empresa.com"
-            value={formData.mail}
-            onChange={(e) => handleChange("mail", e.target.value)}
-            className={errors.mail ? "bo-input-error" : "bo-input"}
-          />
-          {errors.mail && <span className="text-xs font-semibold text-rose-400">{errors.mail}</span>}
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label className="bo-label">Dirección Operativa Base</label>
-          <input
-            type="text"
-            placeholder="Av. Las Magnolias, Edificio X Local 5"
-            value={formData.address}
-            onChange={(e) => handleChange("address", e.target.value)}
-            className={errors.address ? "bo-input-error" : "bo-input"}
-          />
-          {errors.address && <span className="text-xs font-semibold text-rose-400">{errors.address}</span>}
-        </div>
-
-        {/* Row 3 */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="flex flex-col gap-1.5 md:col-span-1">
-            <label className="bo-label">Categoría Asociada</label>
-            <select
-              value={formData.category}
-              onChange={(e) => handleChange("category", e.target.value)}
-              className={errors.category ? "bo-input-error" : "bo-input"}
-            >
-              <option value="" disabled hidden className="bg-[#07142f]">Elige opc...</option>
-              {categorias.map(c => (
-                <option key={c.id} value={c.categories} className="bg-[#07142f] text-white">
-                  {c.categories}
-                </option>
-              ))}
-            </select>
-            {errors.category && <span className="text-xs font-semibold text-rose-400">{errors.category}</span>}
-          </div>
-
-          <div className="flex flex-col gap-1.5 md:col-span-1">
-            <label className="bo-label">Nombre del Encargado</label>
-            <input
-              type="text"
-              placeholder="José D."
-              value={formData.contact_name}
-              onChange={(e) => handleChange("contact_name", e.target.value)}
-              className={errors.contact_name ? "bo-input-error" : "bo-input"}
-            />
-            {errors.contact_name && <span className="text-xs font-semibold text-rose-400">{errors.contact_name}</span>}
-          </div>
-
-          <div className="flex flex-col gap-1.5 md:col-span-1">
-            <label className="bo-label">Teléfono SV</label>
-            <input
-              type="text"
-              placeholder="7000-0000"
-              value={formData.phone}
-              onChange={handlePhoneChange}
-              className={`font-mono ${errors.phone ? "bo-input-error" : "bo-input"}`}
-            />
-            {errors.phone && <span className="text-xs font-semibold text-rose-400">{errors.phone}</span>}
-          </div>
-        </div>
-      </Modal>
+        isPreparingCode={isPreparingCode}
+        onClose={closeModal}
+        onSubmit={handleSubmit}
+        onFieldChange={handleFieldChange}
+        onPhoneChange={handlePhoneChange}
+      />
     </>
   );
 }

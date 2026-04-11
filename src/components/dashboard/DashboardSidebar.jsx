@@ -9,7 +9,6 @@ export default function DashboardSidebar({
   onSelect,
   roleLabel,
   userName,
-  userEmail,
 }) {
   const navigate = useNavigate();
 

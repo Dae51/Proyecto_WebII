@@ -15,7 +15,7 @@ import RedeemModule from "./modules/RedeemModule";
 const ROLE_SUMMARY = {
   [USER_ROLES.ADMIN]: {
     title: "Control total del negocio",
-    text: "Puedes supervisar empresas, clientes, rubros y el proceso de aprobacion de ofertas.",
+    text: "Puedes supervisar clientes, rubros y el proceso de aprobacion de ofertas.",
   },
   [USER_ROLES.COMPANY_ADMIN]: {
     title: "Operacion de empresa ofertante",
@@ -29,7 +29,7 @@ const ROLE_SUMMARY = {
 
 
 export default function Dashboard() {
-  const { metadata, role, roleLabel, user } = useAuth();
+  const { metadata, role, roleLabel } = useAuth();
   const visibleModules = DASHBOARD_MODULES.filter((module) => userHasRole(role, module.roles));
   const [activeModuleId, setActiveModuleId] = React.useState(visibleModules[0]?.id ?? "overview");
   const summary = ROLE_SUMMARY[role] ?? ROLE_SUMMARY[USER_ROLES.EMPLOYEE];
@@ -47,7 +47,7 @@ export default function Dashboard() {
   function renderModule() {
     switch (activeModuleId) {
       case "companies":
-        return <CompaniesModule canManage={role === USER_ROLES.ADMIN} />;
+        return <CompaniesModule canManage={role === USER_ROLES.COMPANY_ADMIN} />;
       case "categories":
         return <CategoriesModule canManage={role === USER_ROLES.ADMIN} />;
       case "clients":
@@ -69,8 +69,6 @@ export default function Dashboard() {
             roleLabel={roleLabel}
             visibleModules={visibleModules}
             allModules={DASHBOARD_MODULES}
-            userName={userName}
-            userEmail={user?.email}
           />
         );
     }
@@ -87,7 +85,6 @@ export default function Dashboard() {
               onSelect={setActiveModuleId}
               roleLabel={roleLabel}
               userName={userName}
-              userEmail={user?.email}
             />
           </div>
 
