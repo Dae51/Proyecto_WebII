@@ -80,15 +80,17 @@ async function getAuthenticatedEmpresa(user) {
     throw new Error("Debes iniciar sesión para administrar empleados.");
   }
 
-  const { data: empleadoActual, error: empleadoError } = await supabase
+  const { data: empleadosUsuario, error: empleadoError } = await supabase
     .from("empleados")
-    .select("id, uuid, empresa")
+    .select("id, uuid, empresa, created_at")
     .eq("uuid", user.id)
-    .maybeSingle();
+    .order("created_at", { ascending: false });
 
   if (empleadoError) {
     throw new Error(getErrorMessage(empleadoError, "No se pudo resolver la empresa del usuario autenticado."));
   }
+
+  const empleadoActual = Array.isArray(empleadosUsuario) ? empleadosUsuario[0] : null;
 
   if (!empleadoActual?.empresa) {
     throw new Error("Tu usuario autenticado no tiene una empresa asociada en la tabla empleados.");
@@ -189,9 +191,9 @@ export default function useEmpleados() {
         .from("empleados")
         .insert(payload)
         .select("id, uuid, created_at, name, last_name, DUI, phone, email, address, empresa")
-        .single();
+        .maybeSingle();
 
-      if (insertError) {
+      if (insertError || !data) {
         throw new Error(getErrorMessage(insertError, "No se pudo crear el empleado."));
       }
 
@@ -229,9 +231,9 @@ export default function useEmpleados() {
         .eq("id", empleadoId)
         .eq("empresa", empresa)
         .select("id, uuid, created_at, name, last_name, DUI, phone, email, address, empresa")
-        .single();
+        .maybeSingle();
 
-      if (updateError) {
+      if (updateError || !data) {
         throw new Error(getErrorMessage(updateError, "No se pudo actualizar el empleado."));
       }
 

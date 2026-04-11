@@ -141,34 +141,32 @@ export default function EmpleadosPage({ canManage = true }) {
           </div>
         ) : null}
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg font-bold text-white">Listado de empleados</h3>
-              <button
-                type="button"
-                onClick={refreshEmpleados}
-                className="btn-secondary"
-                disabled={loading || saving || deletingId !== null}
-              >
-                Refrescar
-              </button>
-            </div>
-
-            {loading ? (
-              <div className="rounded-3xl border border-white/10 bg-white/5 px-4 py-10 text-center text-sm font-medium text-slate-400">
-                Cargando empleados...
-              </div>
-            ) : (
-              <EmpleadosList
-                empleados={empleados}
-                onSelectEmpleado={handleSelectEmpleado}
-                onDeleteEmpleado={handleDelete}
-                deletingId={deletingId}
-                canManage={canManage}
-              />
-            )}
+        <div className="mt-6 space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-lg font-bold text-white">Listado de empleados</h3>
+            <button
+              type="button"
+              onClick={refreshEmpleados}
+              className="btn-secondary"
+              disabled={loading || saving || deletingId !== null}
+            >
+              Refrescar
+            </button>
           </div>
+
+          {loading ? (
+            <div className="rounded-3xl border border-white/10 bg-white/5 px-4 py-10 text-center text-sm font-medium text-slate-400">
+              Cargando empleados...
+            </div>
+          ) : (
+            <EmpleadosList
+              empleados={empleados}
+              onSelectEmpleado={handleSelectEmpleado}
+              onDeleteEmpleado={handleDelete}
+              deletingId={deletingId}
+              canManage={canManage}
+            />
+          )}
         </div>
       </SectionCard>
 
