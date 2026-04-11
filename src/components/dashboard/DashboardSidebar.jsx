@@ -28,9 +28,6 @@ export default function DashboardSidebar({
     <aside className="h-full rounded-[28px] border border-white/10 bg-[#07142f] p-5 shadow-xl">
       {/* Header: identidad de la app */}
       <div className="rounded-3xl border border-white/10 bg-[#020b24] p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-400">
-          Back-office
-        </p>
         <h2 className="mt-3 text-2xl font-black text-white">La Cuponera</h2>
 
         {/* Info del usuario */}
@@ -61,11 +58,10 @@ export default function DashboardSidebar({
               key={module.id}
               type="button"
               onClick={() => onSelect(module.id)}
-              className={`w-full rounded-2xl px-4 py-3 text-left transition ${
-                isActive
+              className={`w-full rounded-2xl px-4 py-3 text-left transition ${isActive
                   ? "bg-gradient-to-r from-amber-300 to-amber-400 text-black shadow-md shadow-amber-400/20"
                   : "bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
-              }`}
+                }`}
             >
               <p className="text-sm font-bold">{module.title}</p>
               <p className={`mt-1 text-xs ${isActive ? "text-black/60" : "text-slate-500"}`}>

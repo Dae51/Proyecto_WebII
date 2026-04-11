@@ -32,12 +32,6 @@ export const DASHBOARD_MODULES = [
     roles: [USER_ROLES.ADMIN, USER_ROLES.COMPANY_ADMIN],
   },
   {
-    id: "employees",
-    title: "Empleados",
-    shortLabel: "Equipo operativo",
-    roles: [USER_ROLES.COMPANY_ADMIN],
-  },
-  {
     id: "redeem",
     title: "Canje de cupones",
     shortLabel: "Validacion de cupones",

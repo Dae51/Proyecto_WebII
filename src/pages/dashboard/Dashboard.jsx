@@ -8,7 +8,6 @@ import { DASHBOARD_MODULES } from "./moduleConfig";
 import CategoriesModule from "./modules/CategoriesModule";
 import ClientsModule from "./modules/ClientsModule";
 import CompaniesModule from "./modules/CompaniesModule";
-import EmployeesModule from "./modules/EmployeesModule";
 import OffersModule from "./modules/OffersModule";
 import OverviewModule from "./modules/OverviewModule";
 import RedeemModule from "./modules/RedeemModule";
@@ -60,8 +59,6 @@ export default function Dashboard() {
             canCreate={userHasRole(role, [USER_ROLES.ADMIN, USER_ROLES.COMPANY_ADMIN])}
           />
         );
-      case "employees":
-        return <EmployeesModule canManage={role === USER_ROLES.COMPANY_ADMIN} />;
       case "redeem":
         return <RedeemModule canRedeem={userHasRole(role, [USER_ROLES.EMPLOYEE])} />;
       case "overview":

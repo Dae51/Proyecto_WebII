@@ -11,9 +11,9 @@ export default function OverviewModule({ summary, roleLabel, visibleModules, all
         actionHref="/"
       >
         <div className="grid gap-4 md:grid-cols-3">
-          <StatCard title="Rol activo" value={roleLabel} accent="text-cyan-400" helper="Se detecta desde user_metadata.role" />
-          <StatCard title="Modulos habilitados" value={String(visibleModules.length).padStart(2, "0")} accent="text-emerald-400" helper="Visibles en el sidebar" />
-          <StatCard title="Acciones restringidas" value={String(allModules.length - visibleModules.length).padStart(2, "0")} accent="text-rose-400" helper="Ocultas para este nivel de acceso" />
+          <StatCard title="Rol activo" value={roleLabel} accent="text-cyan-400" />
+          <StatCard title="Nombre" value={userName} accent="text-cyan-400" />
+          <StatCard title="Nombre" value={userName} accent="text-cyan-400" />
         </div>
       </SectionCard>
 
