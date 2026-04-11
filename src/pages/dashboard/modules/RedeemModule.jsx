@@ -16,22 +16,6 @@ function formatDateTime(value) {
   return parsed.toLocaleString();
 }
 
-function buildHistoryEntry({
-  code,
-  customer,
-  dui,
-  status,
-  timestamp,
-}) {
-  return {
-    code: code || "Sin codigo",
-    customer: customer || "Sin cliente",
-    dui: dui || "Sin DUI",
-    status,
-    timestamp: formatDateTime(timestamp),
-  };
-}
-
 export default function RedeemModule({ canRedeem }) {
   const [form, setForm] = React.useState({
     code: "",
@@ -39,14 +23,13 @@ export default function RedeemModule({ canRedeem }) {
   });
   const [submitting, setSubmitting] = React.useState(false);
   const [result, setResult] = React.useState(null);
-  const [history, setHistory] = React.useState([]);
 
   function handleChange(event) {
     const { name, value } = event.target;
 
     setForm((current) => ({
       ...current,
-      [name]: name === "dui" ? normalizeDui(value) : normalizeCouponCode(value),
+      [name]: name === "dui" ? normalizeDui(value) : value.trim(),
     }));
   }
 
@@ -69,16 +52,6 @@ export default function RedeemModule({ canRedeem }) {
         type: "error",
         message: error.message || "No se pudo validar y canjear el cupon.",
       });
-      setHistory((current) => [
-        buildHistoryEntry({
-          code: normalizeCouponCode(form.code),
-          customer: "No validado",
-          dui: normalizeDui(form.dui),
-          status: "Error",
-          timestamp: new Date().toISOString(),
-        }),
-        ...current,
-      ].slice(0, 6));
       toast.error(error.message || "No se pudo validar y canjear el cupon.");
       return;
     }
@@ -87,16 +60,6 @@ export default function RedeemModule({ canRedeem }) {
       type: "success",
       payload: data,
     });
-    setHistory((current) => [
-      buildHistoryEntry({
-        code: data?.cupon?.code,
-        customer: data?.cliente?.nombreCompleto,
-        dui: data?.cliente?.dui,
-        status: "Canjeado",
-        timestamp: data?.canjeadoEn,
-      }),
-      ...current,
-    ].slice(0, 6));
     setForm({
       code: "",
       dui: "",
@@ -145,9 +108,9 @@ export default function RedeemModule({ canRedeem }) {
                 type="text"
                 value={form.code}
                 onChange={handleChange}
-                placeholder="ABC123"
+                placeholder="550e8400-e29b-41d4-a716-446655440000"
                 autoComplete="off"
-                className="bo-input w-full uppercase"
+                className="bo-input w-full"
               />
             </label>
 
@@ -226,23 +189,6 @@ export default function RedeemModule({ canRedeem }) {
               </div>
             ) : null}
           </div>
-
-          {history.length > 0 ? (
-            <DataTable
-              columns={["Codigo", "Cliente", "DUI", "Estado", "Fecha"]}
-              rows={history.map((entry) => [
-                entry.code,
-                entry.customer,
-                entry.dui,
-                entry.status,
-                entry.timestamp,
-              ])}
-            />
-          ) : (
-            <div className="rounded-3xl border border-dashed border-white/10 px-4 py-8 text-center text-sm text-slate-400">
-              Aun no hay validaciones registradas en esta sesion.
-            </div>
-          )}
         </div>
       </div>
     </SectionCard>

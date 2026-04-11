@@ -4,21 +4,11 @@ import { normalizeText } from "./validator";
 
 const CHECKOUT_KEY_PREFIX = "checkout_items_v1";
 export const PURCHASE_STATES = {
-  AVAILABLE: "DISPONIBLE",
-  REDEEMED: "CANJEADO",
+  AVAILABLE: "pagado",
+  REDEEMED: "canjeado",
+  EXPIRED: "vencido",
 };
 
-const LEGACY_AVAILABLE_STATES = new Set([
-  "DISPONIBLE",
-  "PAGADO",
-  "AVAILABLE",
-  "PAID",
-]);
-
-const LEGACY_REDEEMED_STATES = new Set([
-  "CANJEADO",
-  "REDEEMED",
-]);
 
 function getUserKey(userId) {
   return userId || "guest";
@@ -64,8 +54,8 @@ function normalizeQuantity(value, fallback = 1) {
 function calculateSubtotal(item) {
   const unitPrice = toNumber(
     item.precio_unitario ??
-      item.offer?.offer_price ??
-      item.unit_price
+    item.offer?.offer_price ??
+    item.unit_price
   );
   const quantity = normalizeQuantity(item.quantity, 1);
   return unitPrice * quantity;
@@ -94,15 +84,15 @@ function normalizeStatusToken(value) {
 export function normalizePurchaseStatus(value) {
   const normalized = normalizeStatusToken(value);
 
-  if (LEGACY_AVAILABLE_STATES.has(normalized)) {
+  if (["DISPONIBLE", "PAGADO", "AVAILABLE", "PAID"].includes(normalized)) {
     return PURCHASE_STATES.AVAILABLE;
   }
 
-  if (LEGACY_REDEEMED_STATES.has(normalized)) {
+  if (["CANJEADO", "REDEEMED"].includes(normalized)) {
     return PURCHASE_STATES.REDEEMED;
   }
 
-  return normalized || "";
+  return value || "";
 }
 
 export function isPurchaseAvailable(value) {
@@ -134,11 +124,11 @@ function getCanonicalStatusFilterValues(statusFilter) {
   const normalized = normalizePurchaseStatus(statusFilter);
 
   if (normalized === PURCHASE_STATES.AVAILABLE) {
-    return ["DISPONIBLE", "disponible", "PAGADO", "pagado"];
+    return ["pagado"];
   }
 
   if (normalized === PURCHASE_STATES.REDEEMED) {
-    return ["CANJEADO", "canjeado"];
+    return ["canjeado"];
   }
 
   return normalized ? [statusFilter] : [];
@@ -210,22 +200,11 @@ async function getAuthenticatedEmployeeContext() {
     };
   }
 
-  if (!empleado?.empresa) {
-    return {
-      context: null,
-      error: buildServiceError(
-        { message: "Tu usuario empleado no está asociado a una empresa." },
-        "Tu usuario empleado no está asociado a una empresa.",
-        403
-      ),
-    };
-  }
-
   return {
     context: {
       user,
       empleado,
-      empresaId: empleado.empresa,
+      empresaId: empleado?.empresa ?? null,
     },
     error: null,
   };
@@ -242,8 +221,8 @@ export function addToCheckout({ userId, offer, quantity }) {
   // Si el catálogo no expone precio, se conserva 0 para mantener consistencia.
   const unitPrice = toNumber(
     offer?.offer_price ??
-      offer?.price ??
-      offer?.precio
+    offer?.price ??
+    offer?.precio
   );
 
   const existingIndex = current.findIndex((item) => item.offer?.id === offer?.id);
@@ -315,9 +294,9 @@ function normalizeCartItem(item) {
   const quantity = normalizeQuantity(item?.cantidad ?? item?.quantity, 1);
   const unitPrice = toNumber(
     item?.precio_unitario ??
-      item?.offer?.offer_price ??
-      item?.offer?.price ??
-      item?.offer?.precio
+    item?.offer?.offer_price ??
+    item?.offer?.price ??
+    item?.offer?.precio
   );
 
   return {
@@ -582,15 +561,15 @@ export async function getPurchasedCoupons(userId, statusFilter = null) {
 }
 
 export async function validateAndRedeemCoupon({ code, dui }) {
-  const normalizedCode = normalizeCouponCode(code);
+  const inputValue = String(code ?? "").trim();
   const normalizedDui = normalizeDui(dui);
 
-  if (!normalizedCode) {
+  if (!inputValue) {
     return {
       data: null,
       error: buildServiceError(
-        { message: "Debes ingresar el código del cupón." },
-        "Debes ingresar el código del cupón.",
+        { message: "Debes ingresar algún código o identificador válido." },
+        "Debes ingresar algún código o identificador válido.",
         400
       ),
     };
@@ -612,49 +591,83 @@ export async function validateAndRedeemCoupon({ code, dui }) {
     return { data: null, error: employeeContextError };
   }
 
+  // 1. Obtener cliente de forma segura primero
   const { data: cliente, error: clientError } = await supabase
     .from("clientes")
     .select("uuid, name, last_name, DUI")
     .eq("DUI", normalizedDui)
     .maybeSingle();
 
-  if (clientError) {
-    return {
-      data: null,
-      error: buildServiceError(clientError, "No se pudo validar el cliente."),
-    };
-  }
-
-  if (!cliente?.uuid) {
+  if (clientError || !cliente?.uuid) {
     return {
       data: null,
       error: buildServiceError(
-        { message: "Cliente no encontrado con ese DUI." },
+        clientError || { message: "Cliente no encontrado con ese DUI." },
         "Cliente no encontrado con ese DUI.",
         404
       ),
     };
   }
 
-  const { data: cupon, error: couponError } = await supabase
-    .from("cupones")
-    .select("id, code, title, description, expires_at, empresa")
-    .eq("code", normalizedCode)
-    .maybeSingle();
+  // 2. Búsqueda Polimórfica: Tratar de resolver de qué tipo de código se trata
+  const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/i.test(inputValue);
 
-  if (couponError) {
-    return {
-      data: null,
-      error: buildServiceError(couponError, "No se pudo validar el cupón."),
-    };
+  let targetCompraId = null;
+  let resolvedCuponId = null;
+
+  if (isUuid) {
+    // Escenario A: Podría ser la id directa de la COMPRA (id de compra única)
+    const { data: possibleCompra } = await supabase
+      .from("compras")
+      .select("id, cupon_id")
+      .eq("id", inputValue)
+      .maybeSingle();
+
+    if (possibleCompra?.id) {
+      targetCompraId = possibleCompra.id;
+      resolvedCuponId = possibleCompra.cupon_id;
+    } else {
+      // Escenario B: Fue un UUID pero no le pertenece a una compra. Quizás es del grupo maestro CUPÓN (cupon_id).
+      resolvedCuponId = inputValue;
+    }
+  } else {
+    // Escenario C: Fue un código de texto (AAA000)
+    const normalizedTextCode = inputValue.toUpperCase();
+    const { data: textCupon } = await supabase
+      .from("cupones")
+      .select("id")
+      .eq("code", normalizedTextCode)
+      .maybeSingle();
+
+    if (textCupon?.id) {
+      resolvedCuponId = textCupon.id;
+    }
   }
 
-  if (!cupon?.id) {
+  if (!resolvedCuponId) {
     return {
       data: null,
       error: buildServiceError(
-        { message: "Cupón no encontrado con ese código." },
-        "Cupón no encontrado con ese código.",
+        { message: "El código no fue encontrado en nuestros registros." },
+        "El identificador o código ingresado no existe en nuestro sistema.",
+        404
+      ),
+    };
+  }
+
+  // 3. Extraer el Cupón original para validar reglas base
+  const { data: cupon, error: couponError } = await supabase
+    .from("cupones")
+    .select("id, code, title, description, expires_at, empresa")
+    .eq("id", resolvedCuponId)
+    .maybeSingle();
+
+  if (couponError || !cupon?.id) {
+    return {
+      data: null,
+      error: buildServiceError(
+        couponError || { message: "El cupón originario es inaccesible o fue eliminado." },
+        "El cupón originario es inaccesible o fue eliminado.",
         404
       ),
     };
@@ -664,52 +677,9 @@ export async function validateAndRedeemCoupon({ code, dui }) {
     return {
       data: null,
       error: buildServiceError(
-        { message: "No puedes canjear cupones de otra empresa." },
-        "No puedes canjear cupones de otra empresa.",
+        { message: "Restringido: Estas compras pertenecen a ofertas de otra empresa." },
+        "Restringido: Estas compras pertenecen a ofertas de otra empresa.",
         403
-      ),
-    };
-  }
-
-  const { data: compras, error: purchasesError } = await supabase
-    .from("compras")
-    .select("id, user_id, cupon_id, cantidad, precio_unitario, subtotal, estado, comprado_en, canjeado_en, created_at")
-    .eq("user_id", cliente.uuid)
-    .eq("cupon_id", cupon.id)
-    .order("comprado_en", { ascending: true })
-    .order("created_at", { ascending: true });
-
-  if (purchasesError) {
-    return {
-      data: null,
-      error: buildServiceError(
-        purchasesError,
-        "No se pudieron validar las compras del cliente para este cupón."
-      ),
-    };
-  }
-
-  const availableCompra = (compras ?? []).find((compra) => isPurchaseAvailable(compra.estado));
-  const redeemedCompra = (compras ?? []).find((compra) => isPurchaseRedeemed(compra.estado));
-
-  if (!availableCompra) {
-    if (redeemedCompra) {
-      return {
-        data: null,
-        error: buildServiceError(
-          { message: "Este cliente ya canjeó este cupón y no tiene unidades disponibles." },
-          "Este cliente ya canjeó este cupón y no tiene unidades disponibles.",
-          409
-        ),
-      };
-    }
-
-    return {
-      data: null,
-      error: buildServiceError(
-        { message: "No hay compras disponibles de este cupón para el cliente." },
-        "No hay compras disponibles de este cupón para el cliente.",
-        404
       ),
     };
   }
@@ -718,13 +688,85 @@ export async function validateAndRedeemCoupon({ code, dui }) {
     return {
       data: null,
       error: buildServiceError(
-        { message: "El cupón está vencido y no puede ser canjeado." },
-        "El cupón está vencido y no puede ser canjeado.",
+        { message: "Este modelo de ofertas ya caducó bloqueando cualquier canje oficial subyacente." },
+        "Este modelo de ofertas ya caducó bloqueando cualquier canje oficial subyacente.",
         409
       ),
     };
   }
 
+  // 4. Buscar Compra(s) de este cliente específico sobre esta promoción
+  let comprasDelCliente = [];
+
+  if (targetCompraId) {
+    // Ya sabemos la transacción exacta que estamos atacando
+    const { data: specificCompra, error: specificError } = await supabase
+      .from("compras")
+      .select("*")
+      .eq("id", targetCompraId)
+      .eq("user_id", cliente.uuid)
+      .maybeSingle();
+
+    if (specificError) {
+      return { data: null, error: buildServiceError(specificError, "Fallo inesperado vinculando la compra.") };
+    }
+    
+    if (specificCompra) {
+      comprasDelCliente = [specificCompra];
+    } else {
+      // Esta compra exacta pertenece a OTRO usuario
+      return {
+        data: null,
+        error: buildServiceError(
+          { message: "Esta compra específica no le pertenece al titular con ese DUI." },
+          "Esta compra específica no le pertenece al titular con ese DUI.",
+          403
+        ),
+      };
+    }
+  } else {
+    // Evaluamos el granero de compras que hizo bajo el código general
+    const { data: groupedCompras, error: searchError } = await supabase
+      .from("compras")
+      .select("*")
+      .eq("user_id", cliente.uuid)
+      .eq("cupon_id", resolvedCuponId)
+      .order("comprado_en", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if (searchError) {
+      return { data: null, error: buildServiceError(searchError, "Falló la red al buscar registros anexos.") };
+    }
+    comprasDelCliente = groupedCompras ?? [];
+  }
+
+  // 5. Determinar la compra ganadora
+  const availableCompra = comprasDelCliente.find((c) => isPurchaseAvailable(c.estado));
+  
+  if (!availableCompra) {
+    const isTotallyRedeemed = comprasDelCliente.some((c) => isPurchaseRedeemed(c.estado));
+    if (isTotallyRedeemed) {
+      return {
+        data: null,
+        error: buildServiceError(
+          { message: "El cliente ya canjeó todas sus compras de este tipo anteriormente." },
+          "El cliente ya canjeó todas sus compras de este tipo anteriormente.",
+          409
+        ),
+      };
+    }
+
+    return {
+      data: null,
+      error: buildServiceError(
+        { message: "El cliente no posee comprobantes listos para utilizar sobre esta recompensa." },
+        "El cliente no posee comprobantes de compra relacionados o disponibles para este cupón.",
+        404
+      ),
+    };
+  }
+
+  // 6. Autorización e inserción terminal de la transacción final
   const redeemedAt = new Date().toISOString();
   const { data: updatedCompra, error: updateError } = await supabase
     .from("compras")
@@ -735,24 +777,13 @@ export async function validateAndRedeemCoupon({ code, dui }) {
     })
     .eq("id", availableCompra.id)
     .eq("estado", availableCompra.estado)
-    .select("id, user_id, cupon_id, cantidad, precio_unitario, subtotal, estado, comprado_en, canjeado_en, created_at, updated_at")
+    .select("*")
     .maybeSingle();
 
-  if (updateError) {
+  if (updateError || !updatedCompra) {
     return {
       data: null,
-      error: buildServiceError(updateError, "No se pudo completar el canje del cupón."),
-    };
-  }
-
-  if (!updatedCompra?.id) {
-    return {
-      data: null,
-      error: buildServiceError(
-        { message: "El cupón ya no estaba disponible al momento de confirmar el canje." },
-        "El cupón ya no estaba disponible al momento de confirmar el canje.",
-        409
-      ),
+      error: buildServiceError(updateError, "Fallo logístico bloqueó marcar esta compra como canjeada.", 500),
     };
   }
 
@@ -767,12 +798,12 @@ export async function validateAndRedeemCoupon({ code, dui }) {
       cliente: {
         id: cliente.uuid,
         nombreCompleto: formatCustomerName(cliente),
-        dui: cliente.DUI ?? normalizedDui,
+        dui: cliente.DUI,
       },
       cupon: {
         id: cupon.id,
-        code: cupon.code ?? normalizedCode,
-        title: cupon.title ?? "Cupón",
+        code: cupon.code,
+        title: cupon.title ?? "Cupón genérico",
         description: cupon.description ?? "",
         expiresAt: cupon.expires_at ?? null,
       },
