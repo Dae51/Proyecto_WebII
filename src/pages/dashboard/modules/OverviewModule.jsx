@@ -1,7 +1,7 @@
 import React from "react";
 import { SectionCard, StatCard, ActionPills } from "../../../components/dashboard/ModuleUI";
 
-export default function OverviewModule({ summary, roleLabel, visibleModules, allModules, userName, userEmail }) {
+export default function OverviewModule({ summary, roleLabel, visibleModules, allModules }) {
   return (
     <div className="space-y-6">
       <SectionCard

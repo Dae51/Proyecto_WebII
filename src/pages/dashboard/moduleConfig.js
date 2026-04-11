@@ -9,9 +9,9 @@ export const DASHBOARD_MODULES = [
   },
   {
     id: "companies",
-    title: "Empresas ofertantes",
-    shortLabel: "Gestion comercial",
-    roles: [USER_ROLES.ADMIN],
+    title: "Mi empresa",
+    shortLabel: "Perfil comercial",
+    roles: [USER_ROLES.COMPANY_ADMIN],
   },
   {
     id: "categories",
