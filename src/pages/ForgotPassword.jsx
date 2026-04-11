@@ -9,6 +9,12 @@ import {
 // Se importa la función para validar el correo de recuperación
 import { validateRecoveryEmailInput } from "../resources/validator";
 
+// Netlify/production redirect for recovery flow
+const IS_PRODUCTION_NETLIFY = typeof window !== "undefined" && window.location.origin.includes("netlify.app");
+const REDIRECT_TO_RECOVERY = IS_PRODUCTION_NETLIFY
+  ? "https://lacuponerawebii.netlify.app/restore-password"
+  : `${window.location.origin}/restore-password`;
+
 // Componente para solicitar el correo de recuperación
 function StepRequestEmail({ onBack }) {
   // Se declara el correo
@@ -34,7 +40,7 @@ function StepRequestEmail({ onBack }) {
 
     const { error } = await requestPasswordRecovery({
       email,
-      redirectTo: `${window.location.origin}/restore-password`,
+      redirectTo: REDIRECT_TO_RECOVERY,
     });
 
     setLoading(false);
