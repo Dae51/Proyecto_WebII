@@ -10,7 +10,7 @@ const EMPTY_FORM = {
 };
 
 const DUI_PATTERN = /^\d{8}-\d$/;
-const PHONE_PATTERN = /^\d{8}$/;
+const PHONE_PATTERN = /^\d{4}-\d{4}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function normalizeText(value) {
@@ -24,7 +24,9 @@ function formatDui(value) {
 }
 
 function formatPhone(value) {
-  return String(value ?? "").replace(/\D/g, "").slice(0, 8);
+  const digits = String(value ?? "").replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 4) return digits;
+  return `${digits.slice(0, 4)}-${digits.slice(4)}`;
 }
 
 function getInitialFormValues(initialValues) {
@@ -69,14 +71,19 @@ function validateForm(values) {
 }
 
 export default function EmpleadoForm({
+  isOpen = false,
+  title = "Empleado",
   mode = "create",
   initialValues = EMPTY_FORM,
   saving = false,
+  submitError = "",
   onSubmit,
   onCancel,
 }) {
   const [formValues, setFormValues] = useState(() => getInitialFormValues(initialValues));
   const [errors, setErrors] = useState({});
+
+  if (!isOpen) return null;
 
   const handleChange = (field, value) => {
     const nextValue =
@@ -121,102 +128,121 @@ export default function EmpleadoForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <label className="bo-label">Name</label>
-          <input
-            type="text"
-            value={formValues.name}
-            onChange={(event) => handleChange("name", event.target.value)}
-            className={errors.name ? "bo-input-error" : "bo-input"}
-            placeholder="Employee first name"
-            disabled={saving}
-          />
-          {errors.name ? <span className="text-xs font-semibold text-rose-400">{errors.name}</span> : null}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur-sm">
+      <div className="custom-scroll relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[28px] border border-white/10 bg-[#07142f] p-6 shadow-2xl md:p-8">
+        <div className="mb-6">
+          <h3 className="text-2xl font-black text-white">{title}</h3>
+          <p className="mt-2 text-sm text-slate-400">
+            Completa los datos del empleado. La empresa se asigna automáticamente según tu sesión.
+          </p>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="bo-label">Last name</label>
-          <input
-            type="text"
-            value={formValues.last_name}
-            onChange={(event) => handleChange("last_name", event.target.value)}
-            className={errors.last_name ? "bo-input-error" : "bo-input"}
-            placeholder="Employee last name"
-            disabled={saving}
-          />
-          {errors.last_name ? <span className="text-xs font-semibold text-rose-400">{errors.last_name}</span> : null}
-        </div>
-      </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label className="bo-label">Nombre</label>
+              <input
+                type="text"
+                value={formValues.name}
+                onChange={(event) => handleChange("name", event.target.value)}
+                className={errors.name ? "bo-input-error" : "bo-input"}
+                placeholder="Nombre del empleado"
+                disabled={saving}
+              />
+              {errors.name ? <span className="text-xs font-semibold text-rose-400">{errors.name}</span> : null}
+            </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <label className="bo-label">DUI</label>
-          <input
-            type="text"
-            value={formValues.DUI}
-            onChange={(event) => handleChange("DUI", event.target.value)}
-            className={errors.DUI ? "bo-input-error font-mono" : "bo-input font-mono"}
-            placeholder="12345678-9"
-            disabled={saving}
-          />
-          {errors.DUI ? <span className="text-xs font-semibold text-rose-400">{errors.DUI}</span> : null}
-        </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="bo-label">Apellido</label>
+              <input
+                type="text"
+                value={formValues.last_name}
+                onChange={(event) => handleChange("last_name", event.target.value)}
+                className={errors.last_name ? "bo-input-error" : "bo-input"}
+                placeholder="Apellido del empleado"
+                disabled={saving}
+              />
+              {errors.last_name ? <span className="text-xs font-semibold text-rose-400">{errors.last_name}</span> : null}
+            </div>
+          </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="bo-label">Phone</label>
-          <input
-            type="text"
-            value={formValues.phone}
-            onChange={(event) => handleChange("phone", event.target.value)}
-            className={errors.phone ? "bo-input-error font-mono" : "bo-input font-mono"}
-            placeholder="77778888"
-            disabled={saving}
-          />
-          {errors.phone ? <span className="text-xs font-semibold text-rose-400">{errors.phone}</span> : null}
-        </div>
-      </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label className="bo-label">DUI</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={formValues.DUI}
+                onChange={(event) => handleChange("DUI", event.target.value)}
+                className={errors.DUI ? "bo-input-error font-mono" : "bo-input font-mono"}
+                placeholder="12345678-9"
+                disabled={saving}
+              />
+              {errors.DUI ? <span className="text-xs font-semibold text-rose-400">{errors.DUI}</span> : null}
+            </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label className="bo-label">Email</label>
-        <input
-          type="email"
-          value={formValues.email}
-          onChange={(event) => handleChange("email", event.target.value)}
-          className={errors.email ? "bo-input-error" : "bo-input"}
-          placeholder="employee@company.com"
-          disabled={saving}
-        />
-        {errors.email ? <span className="text-xs font-semibold text-rose-400">{errors.email}</span> : null}
-      </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="bo-label">Teléfono</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={formValues.phone}
+                onChange={(event) => handleChange("phone", event.target.value)}
+                className={errors.phone ? "bo-input-error font-mono" : "bo-input font-mono"}
+                placeholder="7123-4567"
+                disabled={saving}
+              />
+              {errors.phone ? <span className="text-xs font-semibold text-rose-400">{errors.phone}</span> : null}
+            </div>
+          </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label className="bo-label">Address</label>
-        <textarea
-          rows={3}
-          value={formValues.address}
-          onChange={(event) => handleChange("address", event.target.value)}
-          className={errors.address ? "bo-input-error" : "bo-input"}
-          placeholder="Optional address"
-          disabled={saving}
-        />
-        {errors.address ? <span className="text-xs font-semibold text-rose-400">{errors.address}</span> : null}
-      </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="bo-label">Correo electrónico</label>
+            <input
+              type="email"
+              value={formValues.email}
+              onChange={(event) => handleChange("email", event.target.value)}
+              className={errors.email ? "bo-input-error" : "bo-input"}
+              placeholder="empleado@empresa.com"
+              disabled={saving}
+            />
+            {errors.email ? <span className="text-xs font-semibold text-rose-400">{errors.email}</span> : null}
+          </div>
 
-      <div className="flex justify-end gap-3 border-t border-white/10 pt-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="btn-secondary"
-          disabled={saving}
-        >
-          Cancel
-        </button>
-        <button type="submit" className="btn-primary" disabled={saving}>
-          {saving ? "Saving..." : mode === "edit" ? "Update employee" : "Create employee"}
-        </button>
+          <div className="flex flex-col gap-1.5">
+            <label className="bo-label">Dirección</label>
+            <textarea
+              rows={3}
+              value={formValues.address}
+              onChange={(event) => handleChange("address", event.target.value)}
+              className={errors.address ? "bo-input-error" : "bo-input"}
+              placeholder="Dirección del empleado"
+              disabled={saving}
+            />
+            {errors.address ? <span className="text-xs font-semibold text-rose-400">{errors.address}</span> : null}
+          </div>
+
+          {submitError ? (
+            <div className="rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm font-medium text-rose-200">
+              {submitError}
+            </div>
+          ) : null}
+
+          <div className="flex justify-end gap-3 border-t border-white/10 pt-4">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="btn-secondary"
+              disabled={saving}
+            >
+              Cancelar
+            </button>
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? "Guardando..." : mode === "edit" ? "Actualizar empleado" : "Crear empleado"}
+            </button>
+          </div>
+        </form>
       </div>
-    </form>
+    </div>
   );
 }

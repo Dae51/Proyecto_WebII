@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient.js";
+import { useAuth } from "../src/context/AuthContext.jsx";
 
 const DUI_PATTERN = /^\d{8}-\d$/;
-const PHONE_PATTERN = /^\d{8}$/;
+const PHONE_PATTERN = /^\d{4}-\d{4}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function getErrorMessage(error, fallbackMessage) {
@@ -28,7 +29,9 @@ function normalizeDui(value) {
 }
 
 function normalizePhone(value) {
-  return normalizeText(value).replace(/\D/g, "").slice(0, 8);
+  const digits = normalizeText(value).replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 4) return digits;
+  return `${digits.slice(0, 4)}-${digits.slice(4)}`;
 }
 
 function normalizeEmpleadoInput(values) {
@@ -72,37 +75,28 @@ function validateEmpleadoInput(values) {
   return null;
 }
 
-async function getAuthenticatedEmpresa() {
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError) {
-    throw new Error(getErrorMessage(authError, "Unable to get the authenticated user."));
+async function getAuthenticatedEmpresa(user) {
+  if (!user?.id) {
+    throw new Error("Debes iniciar sesión para administrar empleados.");
   }
 
-  if (!user) {
-    throw new Error("You must be signed in to manage employees.");
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("empresa")
-    .eq("id", user.id)
+  const { data: empleadoActual, error: empleadoError } = await supabase
+    .from("empleados")
+    .select("id, uuid, empresa")
+    .eq("uuid", user.id)
     .maybeSingle();
 
-  if (profileError) {
-    throw new Error(getErrorMessage(profileError, "Unable to resolve the authenticated company."));
+  if (empleadoError) {
+    throw new Error(getErrorMessage(empleadoError, "No se pudo resolver la empresa del usuario autenticado."));
   }
 
-  if (!profile?.empresa) {
-    throw new Error("The authenticated profile does not have an associated company.");
+  if (!empleadoActual?.empresa) {
+    throw new Error("Tu usuario autenticado no tiene una empresa asociada en la tabla empleados.");
   }
 
   return {
-    user,
-    empresa: profile.empresa,
+    empresa: empleadoActual.empresa,
+    empleadoActual,
   };
 }
 
@@ -125,16 +119,27 @@ async function ensureEmpleadoOwnership(empleadoId, empresa) {
 }
 
 export default function useEmpleados() {
+  const { user, loading: authLoading } = useAuth();
   const [empleados, setEmpleados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const resolveEmpresaUsuario = useCallback(async () => {
+    if (authLoading) {
+      throw new Error("Cargando sesión...");
+    }
+
+    return getAuthenticatedEmpresa(user);
+  }, [authLoading, user]);
+
   const refreshEmpleados = useCallback(async () => {
+    if (authLoading) return { data: [], error: null };
+
     setLoading(true);
     setError("");
 
     try {
-      const { empresa } = await getAuthenticatedEmpresa();
+      const { empresa } = await resolveEmpresaUsuario();
       const { data, error: empleadosError } = await supabase
         .from("empleados")
         .select("id, uuid, created_at, name, last_name, DUI, phone, email, address, empresa")
@@ -142,24 +147,25 @@ export default function useEmpleados() {
         .order("created_at", { ascending: false });
 
       if (empleadosError) {
-        throw new Error(getErrorMessage(empleadosError, "Unable to load employees."));
+        throw new Error(getErrorMessage(empleadosError, "No se pudieron cargar los empleados."));
       }
 
       setEmpleados(data ?? []);
       return { data: data ?? [], error: null };
     } catch (refreshError) {
-      const message = getErrorMessage(refreshError, "Unable to load employees.");
+      const message = getErrorMessage(refreshError, "No se pudieron cargar los empleados.");
       setEmpleados([]);
       setError(message);
       return { data: [], error: new Error(message) };
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [authLoading, resolveEmpresaUsuario]);
 
   useEffect(() => {
+    if (authLoading) return;
     refreshEmpleados();
-  }, [refreshEmpleados]);
+  }, [authLoading, refreshEmpleados]);
 
   const createEmpleado = useCallback(async (values) => {
     setError("");
@@ -170,7 +176,7 @@ export default function useEmpleados() {
         throw new Error(validationMessage);
       }
 
-      const { empresa } = await getAuthenticatedEmpresa();
+      const { empresa } = await resolveEmpresaUsuario();
       const normalized = normalizeEmpleadoInput(values);
 
       const payload = {
@@ -186,17 +192,17 @@ export default function useEmpleados() {
         .single();
 
       if (insertError) {
-        throw new Error(getErrorMessage(insertError, "Unable to create employee."));
+        throw new Error(getErrorMessage(insertError, "No se pudo crear el empleado."));
       }
 
       await refreshEmpleados();
       return { data, error: null };
     } catch (createError) {
-      const message = getErrorMessage(createError, "Unable to create employee.");
+      const message = getErrorMessage(createError, "No se pudo crear el empleado.");
       setError(message);
       return { data: null, error: new Error(message) };
     }
-  }, [refreshEmpleados]);
+  }, [refreshEmpleados, resolveEmpresaUsuario]);
 
   const updateEmpleado = useCallback(async (empleadoId, values) => {
     setError("");
@@ -207,7 +213,7 @@ export default function useEmpleados() {
         throw new Error(validationMessage);
       }
 
-      const { empresa } = await getAuthenticatedEmpresa();
+      const { empresa } = await resolveEmpresaUsuario();
       await ensureEmpleadoOwnership(empleadoId, empresa);
 
       const normalized = normalizeEmpleadoInput(values);
@@ -226,23 +232,23 @@ export default function useEmpleados() {
         .single();
 
       if (updateError) {
-        throw new Error(getErrorMessage(updateError, "Unable to update employee."));
+        throw new Error(getErrorMessage(updateError, "No se pudo actualizar el empleado."));
       }
 
       await refreshEmpleados();
       return { data, error: null };
     } catch (saveError) {
-      const message = getErrorMessage(saveError, "Unable to update employee.");
+      const message = getErrorMessage(saveError, "No se pudo actualizar el empleado.");
       setError(message);
       return { data: null, error: new Error(message) };
     }
-  }, [refreshEmpleados]);
+  }, [refreshEmpleados, resolveEmpresaUsuario]);
 
   const deleteEmpleado = useCallback(async (empleadoId) => {
     setError("");
 
     try {
-      const { empresa } = await getAuthenticatedEmpresa();
+      const { empresa } = await resolveEmpresaUsuario();
       await ensureEmpleadoOwnership(empleadoId, empresa);
 
       const { error: deleteError } = await supabase
@@ -252,17 +258,17 @@ export default function useEmpleados() {
         .eq("empresa", empresa);
 
       if (deleteError) {
-        throw new Error(getErrorMessage(deleteError, "Unable to delete employee."));
+        throw new Error(getErrorMessage(deleteError, "No se pudo eliminar el empleado."));
       }
 
       await refreshEmpleados();
       return { error: null };
     } catch (removeError) {
-      const message = getErrorMessage(removeError, "Unable to delete employee.");
+      const message = getErrorMessage(removeError, "No se pudo eliminar el empleado.");
       setError(message);
       return { error: new Error(message) };
     }
-  }, [refreshEmpleados]);
+  }, [refreshEmpleados, resolveEmpresaUsuario]);
 
   return {
     empleados,

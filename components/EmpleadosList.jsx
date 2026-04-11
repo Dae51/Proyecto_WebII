@@ -10,7 +10,7 @@ export default function EmpleadosList({
   if (!empleados.length) {
     return (
       <div className="rounded-3xl border border-dashed border-white/10 px-4 py-10 text-center text-sm font-medium text-slate-400">
-        No employees found for this company yet.
+        Aún no hay empleados registrados para esta empresa.
       </div>
     );
   }
@@ -21,7 +21,7 @@ export default function EmpleadosList({
         <table className="min-w-full divide-y divide-white/10">
           <thead className="bg-white/5">
             <tr>
-              {["Name", "Last name", "DUI", "Phone", "Email", "Address", "Actions"].map((column) => (
+              {["Nombre", "Apellido", "DUI", "Teléfono", "Correo", "Dirección", "Acciones"].map((column) => (
                 <th
                   key={column}
                   scope="col"
@@ -45,7 +45,7 @@ export default function EmpleadosList({
                 <td className="px-4 py-4 text-sm text-slate-300">{empleado.DUI}</td>
                 <td className="px-4 py-4 text-sm text-slate-300">{empleado.phone}</td>
                 <td className="px-4 py-4 text-sm text-slate-300">{empleado.email}</td>
-                <td className="px-4 py-4 text-sm text-slate-300">{empleado.address || "No address"}</td>
+                <td className="px-4 py-4 text-sm text-slate-300">{empleado.address || "Sin dirección"}</td>
                 <td className="px-4 py-4 text-sm text-slate-300">
                   <div className="flex gap-3">
                     {canManage ? (
@@ -58,7 +58,7 @@ export default function EmpleadosList({
                           }}
                           className="text-xs font-bold text-cyan-400 transition hover:text-cyan-300"
                         >
-                          Edit
+                          Editar
                         </button>
                         <button
                           type="button"
@@ -71,11 +71,11 @@ export default function EmpleadosList({
                           disabled={deletingId === empleado.id}
                           className="text-xs font-bold text-rose-400 transition hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {deletingId === empleado.id ? "Deleting..." : "Delete"}
+                          {deletingId === empleado.id ? "Eliminando..." : "Eliminar"}
                         </button>
                       </>
                     ) : (
-                      <span className="text-xs text-slate-500">Read only</span>
+                      <span className="text-xs text-slate-500">Sólo lectura</span>
                     )}
                   </div>
                 </td>

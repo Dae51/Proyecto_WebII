@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { toast } from "react-toastify";
 import EmpleadoForm from "../components/EmpleadoForm.jsx";
 import EmpleadosList from "../components/EmpleadosList.jsx";
 import useEmpleados from "../hooks/useEmpleados.js";
@@ -17,37 +18,36 @@ export default function EmpleadosPage({ canManage = true }) {
 
   const [selectedEmpleado, setSelectedEmpleado] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
   const formMode = isCreating ? "create" : selectedEmpleado ? "edit" : null;
-  const formTitle = isCreating ? "New employee" : selectedEmpleado ? "Edit employee" : "Employee form";
-  const formDescription = isCreating
-    ? "Create a new employee for your current company."
-    : selectedEmpleado
-      ? "Update the selected employee information."
-      : "Select an employee from the list or create a new one.";
+  const formTitle = isCreating ? "Nuevo empleado" : selectedEmpleado ? "Editar empleado" : "Empleado";
 
   const helperStats = useMemo(() => {
     return {
       total: String(empleados.length).padStart(2, "0"),
-      mode: isCreating ? "Create" : selectedEmpleado ? "Edit" : "Idle",
+      mode: isCreating ? "Crear" : selectedEmpleado ? "Editar" : "Libre",
     };
   }, [empleados.length, isCreating, selectedEmpleado]);
 
   const resetForm = () => {
     setIsCreating(false);
     setSelectedEmpleado(null);
+    setModalOpen(false);
   };
 
   const handleCreateClick = () => {
     setSelectedEmpleado(null);
     setIsCreating(true);
+    setModalOpen(true);
   };
 
   const handleSelectEmpleado = (empleado) => {
     setSelectedEmpleado(empleado);
     setIsCreating(false);
+    setModalOpen(true);
   };
 
   const handleSubmit = async (values) => {
@@ -60,9 +60,11 @@ export default function EmpleadosPage({ canManage = true }) {
     setSaving(false);
 
     if (result.error) {
+      toast.error(result.error.message);
       return;
     }
 
+    toast.success(formMode === "edit" ? "Empleado actualizado correctamente." : "Empleado creado correctamente.");
     resetForm();
   };
 
@@ -72,9 +74,11 @@ export default function EmpleadosPage({ canManage = true }) {
     setDeletingId(null);
 
     if (result.error) {
+      toast.error(result.error.message);
       return;
     }
 
+    toast.success("Empleado eliminado correctamente.");
     if (selectedEmpleado?.id === empleado.id) {
       resetForm();
     }
@@ -96,8 +100,8 @@ export default function EmpleadosPage({ canManage = true }) {
   return (
     <div className="space-y-6">
       <SectionCard
-        title="Employees"
-        subtitle="Manage the employees that belong to the authenticated company."
+        title="Empleados"
+        subtitle="Administra únicamente a los empleados que pertenecen a tu empresa."
         actionVisible={true}
         action={
           <button
@@ -106,28 +110,28 @@ export default function EmpleadosPage({ canManage = true }) {
             className="btn-primary"
             disabled={saving || deletingId !== null}
           >
-            New employee
+            Nuevo empleado
           </button>
         }
       >
         <div className="grid gap-4 md:grid-cols-3">
           <StatCard
-            title="Employees"
+            title="Empleados"
             value={loading ? "-" : helperStats.total}
             accent="text-cyan-400"
-            helper="Only employees from your company are listed."
+            helper="Sólo se listan empleados de tu empresa."
           />
           <StatCard
-            title="Form mode"
+            title="Modo actual"
             value={helperStats.mode}
             accent="text-emerald-400"
-            helper="Create or edit mode changes automatically."
+            helper="Cambia según la acción que selecciones."
           />
           <StatCard
-            title="Refresh"
-            value={loading ? "Loading" : "Ready"}
+            title="Estado"
+            value={loading ? "Cargando" : "Listo"}
             accent="text-amber-300"
-            helper="Use refresh if your data changed externally."
+            helper="Puedes refrescar si hubo cambios externos."
           />
         </div>
 
@@ -140,20 +144,20 @@ export default function EmpleadosPage({ canManage = true }) {
         <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg font-bold text-white">Employee list</h3>
+              <h3 className="text-lg font-bold text-white">Listado de empleados</h3>
               <button
                 type="button"
                 onClick={refreshEmpleados}
                 className="btn-secondary"
                 disabled={loading || saving || deletingId !== null}
               >
-                Refresh
+                Refrescar
               </button>
             </div>
 
             {loading ? (
               <div className="rounded-3xl border border-white/10 bg-white/5 px-4 py-10 text-center text-sm font-medium text-slate-400">
-                Loading employees...
+                Cargando empleados...
               </div>
             ) : (
               <EmpleadosList
@@ -165,30 +169,20 @@ export default function EmpleadosPage({ canManage = true }) {
               />
             )}
           </div>
-
-          <div className="rounded-[28px] border border-white/10 bg-[#07142f] p-6 shadow-xl">
-            <div className="mb-5">
-              <h3 className="text-xl font-black text-white">{formTitle}</h3>
-              <p className="mt-2 text-sm text-slate-400">{formDescription}</p>
-            </div>
-
-            {formMode ? (
-              <EmpleadoForm
-                key={`${formMode}-${selectedEmpleado?.id ?? "new"}`}
-                mode={formMode}
-                initialValues={selectedEmpleado}
-                saving={saving}
-                onSubmit={handleSubmit}
-                onCancel={resetForm}
-              />
-            ) : (
-              <div className="rounded-3xl border border-dashed border-white/10 px-4 py-10 text-center text-sm font-medium text-slate-400">
-                Select an employee from the list or click “New employee” to start.
-              </div>
-            )}
-          </div>
         </div>
       </SectionCard>
+
+      <EmpleadoForm
+        key={`${formMode}-${selectedEmpleado?.id ?? "new"}-${modalOpen ? "open" : "closed"}`}
+        isOpen={modalOpen && Boolean(formMode)}
+        title={formTitle}
+        mode={formMode ?? "create"}
+        initialValues={selectedEmpleado}
+        saving={saving}
+        submitError={error}
+        onSubmit={handleSubmit}
+        onCancel={resetForm}
+      />
     </div>
   );
 }
